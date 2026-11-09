@@ -28,6 +28,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2 text-xs">
+        <a href="index2.html" class="px-3 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-semibold transition">🔦 ไปที่ Version 2 (โหมดยิงเลเซอร์จริง Raw Hit) →</a>
         <span class="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 font-medium">256 Laser Channels</span>
         <span class="px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-300 font-medium">4,096 Voxels (16³)</span>
       </div>
@@ -38,8 +39,8 @@
   <main class="max-w-6xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
     <!-- Left 3D Viewport -->
     <div class="lg:col-span-8 flex flex-col gap-3">
-      <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-gradient-to-b from-slate-900 to-black shadow-2xl flex-1 min-h-[460px] flex items-center justify-center">
-        <canvas id="simCanvas" width="820" height="520" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+      <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-gradient-to-b from-slate-900 to-black shadow-2xl flex-1 min-h-[440px] flex items-center justify-center">
+        <canvas id="simCanvas" width="800" height="500" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
 
         <!-- Overlay Badges -->
         <div class="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
@@ -47,14 +48,11 @@
             Enclosure: <strong class="text-white">30 × 30 × 30 cm</strong>
           </div>
           <div class="px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-700/70 text-xs text-slate-300">
-            Mode: <strong id="mode-badge" class="text-rose-400">3D POV Vision</strong>
-          </div>
-          <div id="hit-counter-badge" class="hidden px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-xs text-amber-300 font-mono">
-            Active Laser Hits: <strong id="hit-count">0</strong> / 256
+            Laser Pitch: <strong class="text-white">1.5 cm</strong>
           </div>
         </div>
 
-        <div class="absolute bottom-3 left-3 right-3 flex flex-wrap justify-between items-center text-xs text-slate-400 pointer-events-none bg-slate-950/75 px-3 py-1.5 rounded-lg border border-slate-800/80">
+        <div class="absolute bottom-3 left-3 right-3 flex flex-wrap justify-between items-center text-xs text-slate-400 pointer-events-none bg-slate-950/70 px-3 py-1.5 rounded-lg border border-slate-800/80">
           <span>🖱️ ลากเมาส์หรือใช้นิ้วปัดเพื่อหมุนดูมุมมองรอบทิศทาง 360° (เห็นมิติความลึกด้านข้างจริง)</span>
           <span id="fps-readout" class="text-rose-400 font-mono">30.0 Hz Refresh</span>
         </div>
@@ -63,27 +61,6 @@
 
     <!-- Right Controls & Specs -->
     <div class="lg:col-span-4 flex flex-col gap-4">
-      <!-- Render Mode Switcher (NEW: Real Laser Physics vs POV) -->
-      <div class="p-4 rounded-2xl bg-slate-900/95 border border-rose-500/40 shadow-lg">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="text-sm font-semibold text-white">โหมดการแสดงผลแสงเลเซอร์</h2>
-          <span class="text-[11px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-medium">สำคัญ</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button id="render-pov" class="px-3 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left">
-            <div>👁️ ภาพติดตา (POV)</div>
-            <div class="text-[11px] font-normal opacity-80">เห็นรูปทรง 3D เต็มตัว</div>
-          </button>
-          <button id="render-raw" class="px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left">
-            <div>🔦 ยิงเลเซอร์จริง (Raw Hit)</div>
-            <div class="text-[11px] font-normal opacity-80">คมชัด 100% เฉพาะจุดโดนใบพัด</div>
-          </button>
-        </div>
-        <button id="btn-slowmo" class="mt-2.5 w-full py-1.5 px-3 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-medium transition flex items-center justify-center gap-1.5">
-          ⚡ กดเพื่อทดสอบโหมดหมุนช้า (Slow RPM + ยิงเลเซอร์จริง)
-        </button>
-      </div>
-
       <!-- Preset 3D Models -->
       <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
         <h2 class="text-sm font-semibold text-white mb-2.5">1. เลือกรูปทรง 3D (Voxel Preset)</h2>
@@ -106,12 +83,8 @@
             <span class="text-slate-300">ความเร็วมอเตอร์กลาง (BLDC RPM)</span>
             <span id="rpm-val" class="text-rose-400 font-mono font-semibold">1800 RPM</span>
           </div>
-          <input id="rpm-slider" type="range" min="15" max="2400" value="1800" class="w-full accent-rose-500">
-          <div class="flex justify-between text-[11px] text-slate-400 mt-0.5">
-            <span>15 RPM (ช้ามาก)</span>
-            <span>600 RPM</span>
-            <span>2400 RPM</span>
-          </div>
+          <input id="rpm-slider" type="range" min="120" max="2400" value="1800" class="w-full accent-rose-500">
+          <p class="text-[11px] text-slate-400 mt-0.5">ลองลด RPM ลงต่ำกว่า 300 เพื่อดูจังหวะเลเซอร์ยิงตกกระทบใบพัดทีละชั้น</p>
         </div>
 
         <div>
@@ -140,6 +113,15 @@
           </label>
         </div>
       </div>
+
+      <!-- Technical Spec Summary -->
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs space-y-1.5">
+        <h2 class="text-sm font-semibold text-white mb-1">3. สเปกต้นแบบ (30 cm Event Showcase)</h2>
+        <div class="flex justify-between text-slate-300"><span>ขนาดตัวเครื่อง:</span><span class="text-white font-medium">30 × 30 × 30 cm</span></div>
+        <div class="flex justify-between text-slate-300"><span>เมทริกซ์เลเซอร์ด้านบน:</span><span class="text-white font-medium">16 × 16 หัว (Pitch 1.5 cm)</span></div>
+        <div class="flex justify-between text-slate-300"><span>ชิปขับสัญญาณ:</span><span class="text-white font-medium">32× TPIC6B595 (SPI 10MHz)</span></div>
+        <div class="flex justify-between text-slate-300"><span>เซนเซอร์ซิงค์รอบหมุน:</span><span class="text-white font-medium">Hall Effect Zero-Crossing</span></div>
+      </div>
     </div>
   </main>
 
@@ -151,7 +133,6 @@
     let isDragging = false;
     let lastX = 0, lastY = 0;
     let shapeMode = 'cube';
-    let renderMode = 'pov'; // 'pov' | 'raw'
     let laserColor = 'red';
     let bladeAngle = 0;
     let rpm = 1800;
@@ -161,44 +142,9 @@
     let time = 0;
 
     const colorPalettes = {
-      red: { main: '255, 45, 75', core: '255, 240, 245', beam: '255, 50, 80' },
-      green: { main: '16, 245, 135', core: '230, 255, 240', beam: '16, 215, 129' },
-      cyan: { main: '56, 200, 255', core: '235, 250, 255', beam: '14, 185, 245' }
-    };
-
-    const btnRenderPov = document.getElementById('render-pov');
-    const btnRenderRaw = document.getElementById('render-raw');
-    const modeBadge = document.getElementById('mode-badge');
-    const hitBadge = document.getElementById('hit-counter-badge');
-    const hitCountEl = document.getElementById('hit-count');
-    const rpmSlider = document.getElementById('rpm-slider');
-    const rpmVal = document.getElementById('rpm-val');
-    const fpsReadout = document.getElementById('fps-readout');
-
-    function setRenderMode(mode) {
-      renderMode = mode;
-      if (mode === 'pov') {
-        btnRenderPov.className = 'px-3 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left';
-        btnRenderRaw.className = 'px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left';
-        modeBadge.textContent = '3D POV Vision';
-        hitBadge.classList.add('hidden');
-      } else {
-        btnRenderRaw.className = 'px-3 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left';
-        btnRenderPov.className = 'px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left';
-        modeBadge.textContent = 'Raw Laser Intersection (No Softening)';
-        hitBadge.classList.remove('hidden');
-      }
-    }
-
-    btnRenderPov.onclick = () => setRenderMode('pov');
-    btnRenderRaw.onclick = () => setRenderMode('raw');
-
-    document.getElementById('btn-slowmo').onclick = () => {
-      setRenderMode('raw');
-      rpm = 60;
-      rpmSlider.value = 60;
-      rpmVal.textContent = '60 RPM';
-      fpsReadout.textContent = '1.0 Hz Refresh (Slow-Mo Laser Hit)';
+      red: { main: '255, 55, 85', core: '255, 220, 225', beam: '244, 63, 94' },
+      green: { main: '16, 235, 129', core: '215, 255, 235', beam: '16, 185, 129' },
+      cyan: { main: '56, 189, 248', core: '220, 245, 255', beam: '14, 165, 233' }
     };
 
     document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -215,7 +161,7 @@
       btn.addEventListener('click', () => {
         laserColor = btn.dataset.color;
         document.querySelectorAll('.color-btn').forEach(b => {
-          b.classList.remove('border-rose-500', 'bg-rose-500/20');
+          b.classList.remove('border-rose-500', 'border-emerald-500', 'border-cyan-500', 'bg-rose-500/20');
           b.classList.add('border-slate-700', 'bg-slate-800');
         });
         btn.classList.remove('border-slate-700', 'bg-slate-800');
@@ -223,10 +169,10 @@
       });
     });
 
-    rpmSlider.oninput = (e) => {
+    document.getElementById('rpm-slider').oninput = (e) => {
       rpm = parseInt(e.target.value, 10);
-      rpmVal.textContent = `${rpm} RPM`;
-      fpsReadout.textContent = `${(rpm / 60).toFixed(1)} Hz Refresh`;
+      document.getElementById('rpm-val').textContent = `${rpm} RPM`;
+      document.getElementById('fps-readout').textContent = `${(rpm / 60).toFixed(1)} Hz Refresh`;
     };
     document.getElementById('toggle-beams').onchange = (e) => { showBeams = e.target.checked; };
     document.getElementById('toggle-blade').onchange = (e) => { showBlade = e.target.checked; };
@@ -319,26 +265,10 @@
       return false;
     }
 
-    // Helper: compute exact height (iy in 0..15) of the helical blade at grid column (ix, iz)
-    function getBladeHeightAtColumn(ix, iz, currentBladeAngle) {
-      const dx = ix - 7.5;
-      const dz = iz - 7.5;
-      const radiusSq = dx * dx + dz * dz;
-      if (radiusSq > 8.2 * 8.2) return -1; // outside circular rotor radius
-
-      const colAngle = (Math.atan2(dz, dx) + Math.PI * 2) % (Math.PI * 2);
-      const normBlade = (currentBladeAngle % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-      // Helical ramp maps angle difference (0..2PI) directly to height level iy (0..15)
-      const relAngle = (colAngle - normBlade + Math.PI * 2) % (Math.PI * 2);
-      const exactY = (relAngle / (Math.PI * 2)) * 15;
-      return Math.round(exactY);
-    }
-
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      time += 0.02;
-      // Scale angular velocity accurately with RPM
-      bladeAngle += (rpm / 60) * 0.065;
+      time += 0.025;
+      bladeAngle += (rpm / 60) * 0.1;
       const pal = colorPalettes[laserColor];
 
       const boxSize = 125;
@@ -362,14 +292,14 @@
         ctx.stroke();
       });
 
-      // Top 16x16 Laser Emitter Plate (all 256 diodes)
-      for (let ix = 0; ix < 16; ix++) {
-        for (let iz = 0; iz < 16; iz++) {
-          const wx = ((ix / 15) - 0.5) * boxSize * 1.4;
-          const wz = ((iz / 15) - 0.5) * boxSize * 1.4;
+      // Top 16x16 Laser Emitter Array
+      for (let ix = 0; ix < 16; ix += 2) {
+        for (let iz = 0; iz < 16; iz += 2) {
+          const wx = ((ix / 15) - 0.5) * boxSize * 1.45;
+          const wz = ((iz / 15) - 0.5) * boxSize * 1.45;
           const p = project(wx, boxSize, wz);
-          ctx.fillStyle = 'rgba(148, 163, 184, 0.35)';
-          ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+          ctx.fillStyle = `rgba(${pal.main}, 0.5)`;
+          ctx.fillRect(p.x - 1.2, p.y - 1.2, 2.4, 2.4);
         }
       }
 
@@ -383,140 +313,66 @@
       ctx.lineTo(shaftBot.x, shaftBot.y);
       ctx.stroke();
 
-      // Rotating Helical Blade Surface
+      // Rotating Helical Blade
       if (showBlade) {
-        const steps = 48;
-        let prevOuter = null;
-        let prevInner = null;
-        for (let s = 0; s <= steps; s++) {
-          const frac = s / steps; // 0..1 corresponds to iy 0..15
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.26)';
+        ctx.lineWidth = 1.3;
+        for (let s = 0; s < 28; s++) {
+          const frac = s / 27;
           const ang = bladeAngle + frac * Math.PI * 2;
-          const wy = (frac - 0.5) * boxSize * 1.4;
-          const r = boxSize * 0.82;
-          const pInner = project(0, wy, 0);
-          const pOuter = project(Math.cos(ang) * r, wy, Math.sin(ang) * r);
-
-          ctx.strokeStyle = renderMode === 'raw'
-            ? 'rgba(148, 163, 184, 0.38)'
-            : 'rgba(125, 211, 252, 0.22)';
-          ctx.lineWidth = 1.2;
+          const yHeight = (frac - 0.5) * boxSize * 1.45;
+          const r = boxSize * 0.85;
+          const p1 = project(0, yHeight, 0);
+          const p2 = project(Math.cos(ang) * r, yHeight, Math.sin(ang) * r);
           ctx.beginPath();
-          ctx.moveTo(pInner.x, pInner.y);
-          ctx.lineTo(pOuter.x, pOuter.y);
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
           ctx.stroke();
-
-          if (prevOuter) {
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
-            ctx.lineWidth = 1.8;
-            ctx.beginPath();
-            ctx.moveTo(prevOuter.x, prevOuter.y);
-            ctx.lineTo(pOuter.x, pOuter.y);
-            ctx.stroke();
-          }
-          prevOuter = pOuter;
-          prevInner = pInner;
         }
       }
 
-      let rawHitCount = 0;
+      // Voxels & Top-Down Laser Beams
+      const povFactor = Math.min(1, rpm / 600);
+      for (let ix = 0; ix < 16; ix++) {
+        for (let iz = 0; iz < 16; iz++) {
+          for (let iy = 0; iy < 16; iy++) {
+            if (!isVoxelActive(ix, iy, iz, time)) continue;
+            const wx = ((ix / 15) - 0.5) * boxSize * 1.4;
+            const wy = ((iy / 15) - 0.5) * boxSize * 1.4;
+            const wz = ((iz / 15) - 0.5) * boxSize * 1.4;
 
-      if (renderMode === 'raw') {
-        // RAW HARDWARE LASER MODE:
-        // Zero persistence/softening. A laser at (ix, iz) ONLY fires at the exact instant
-        // the physical blade surface is at height iy where a target voxel exists!
-        for (let ix = 0; ix < 16; ix++) {
-          for (let iz = 0; iz < 16; iz++) {
-            const bladeY = getBladeHeightAtColumn(ix, iz, bladeAngle);
-            if (bladeY < 0) continue;
+            const vAngle = (Math.atan2(wz, wx) + Math.PI * 2) % (Math.PI * 2);
+            const bAngle = (bladeAngle % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            const diff = Math.abs(vAngle - bAngle);
+            const alpha = povFactor > 0.85 ? 0.92 : Math.max(0.12, 1 - (diff / Math.PI));
 
-            if (isVoxelActive(ix, bladeY, iz, time)) {
-              rawHitCount++;
-              const wx = ((ix / 15) - 0.5) * boxSize * 1.4;
-              const wy = ((bladeY / 15) - 0.5) * boxSize * 1.4;
-              const wz = ((iz / 15) - 0.5) * boxSize * 1.4;
+            const p = project(wx, wy, wz);
 
-              const pHit = project(wx, wy, wz);
+            if (showBeams && Math.random() < 0.2) {
               const pTop = project(wx, boxSize, wz);
-
-              // Highlight active diode on top plate
-              ctx.fillStyle = `rgb(${pal.core})`;
+              ctx.strokeStyle = `rgba(${pal.beam}, ${0.16 * alpha})`;
+              ctx.lineWidth = 0.9;
               ctx.beginPath();
-              ctx.arc(pTop.x, pTop.y, 2.8 * pTop.s, 0, Math.PI * 2);
-              ctx.fill();
-
-              // Draw crisp, un-softened laser beam straight from emitter to blade hit point
-              if (showBeams) {
-                ctx.strokeStyle = `rgba(${pal.beam}, 0.92)`;
-                ctx.lineWidth = 1.8;
-                ctx.beginPath();
-                ctx.moveTo(pTop.x, pTop.y);
-                ctx.lineTo(pHit.x, pHit.y);
-                ctx.stroke();
-              }
-
-              // Draw sharp laser strike spot on the blade (100% opacity, no fade)
-              ctx.fillStyle = `rgb(${pal.main})`;
-              ctx.beginPath();
-              ctx.arc(pHit.x, pHit.y, 4.2 * pHit.s, 0, Math.PI * 2);
-              ctx.fill();
-
-              ctx.fillStyle = '#ffffff';
-              ctx.beginPath();
-              ctx.arc(pHit.x, pHit.y, 2.0 * pHit.s, 0, Math.PI * 2);
-              ctx.fill();
+              ctx.moveTo(pTop.x, pTop.y);
+              ctx.lineTo(p.x, p.y);
+              ctx.stroke();
             }
-          }
-        }
-        hitCountEl.textContent = rawHitCount;
-      } else {
-        // POV MODE (Human Eye Persistence of Vision at high RPM, or stepped slice at low RPM without fake alpha fade)
-        const sliceWindow = Math.max(0.28, (rpm / 900) * Math.PI * 2);
-        for (let ix = 0; ix < 16; ix++) {
-          for (let iz = 0; iz < 16; iz++) {
-            const bladeY = getBladeHeightAtColumn(ix, iz, bladeAngle);
-            for (let iy = 0; iy < 16; iy++) {
-              if (!isVoxelActive(ix, iy, iz, time)) continue;
 
-              // At low RPM even in POV mode, only show voxels within the current swept arc sharply
-              if (rpm < 900) {
-                const dy = Math.abs(iy - bladeY);
-                const maxDy = (rpm / 900) * 15;
-                if (dy > Math.max(0.6, maxDy)) continue;
-              }
+            ctx.fillStyle = `rgba(${pal.main}, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3.1 * p.s, 0, Math.PI * 2);
+            ctx.fill();
 
-              const wx = ((ix / 15) - 0.5) * boxSize * 1.4;
-              const wy = ((iy / 15) - 0.5) * boxSize * 1.4;
-              const wz = ((iz / 15) - 0.5) * boxSize * 1.4;
-              const p = project(wx, wy, wz);
-
-              const isExactHit = (iy === bladeY);
-
-              if (showBeams && isExactHit) {
-                const pTop = project(wx, boxSize, wz);
-                ctx.strokeStyle = `rgba(${pal.beam}, 0.65)`;
-                ctx.lineWidth = 1.2;
-                ctx.beginPath();
-                ctx.moveTo(pTop.x, pTop.y);
-                ctx.lineTo(p.x, p.y);
-                ctx.stroke();
-              }
-
-              ctx.fillStyle = `rgb(${pal.main})`;
-              ctx.beginPath();
-              ctx.arc(p.x, p.y, (isExactHit ? 3.8 : 2.9) * p.s, 0, Math.PI * 2);
-              ctx.fill();
-
-              ctx.fillStyle = `rgb(${pal.core})`;
-              ctx.beginPath();
-              ctx.arc(p.x, p.y, (isExactHit ? 1.8 : 1.2) * p.s, 0, Math.PI * 2);
-              ctx.fill();
-            }
+            ctx.fillStyle = `rgba(${pal.core}, ${alpha * 0.95})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1.3 * p.s, 0, Math.PI * 2);
+            ctx.fill();
           }
         }
       }
 
       if (!isDragging && autoOrbit) {
-        rotY += 0.003;
+        rotY += 0.0035;
       }
       requestAnimationFrame(draw);
     }
