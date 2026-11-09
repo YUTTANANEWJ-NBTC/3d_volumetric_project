@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HoloVol Mini Demo | 10×10×15 cm Low-Density Prototype (index4.html)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    canvas {
+      touch-action: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0f172a;
+      border-radius: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 rounded-full bg-amber-400 animate-pulse shadow-[0_0_12px_#fbbf24]"></div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight text-white">HoloVol Mini PoC — ต้นแบบขนาดเล็ก 10 × 10 × 15 cm (Version 4)</h1>
+          <p class="text-xs text-slate-400">จำลองกรณีใช้หัวเลเซอร์น้อยลง (4×4 = 16 จุด / 8×8 = 64 จุด / 16×16 = 256 จุด) ในตู้ทรงสูงกะทัดรัด 10×10×15 ซม.</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <a href="index.html" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-medium transition">V1 (30cm)</a>
+        <a href="index2.html" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-medium transition">V2 (Raw Hit)</a>
+        <a href="index3.html" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-medium transition">V3 (20 Models)</a>
+        <span class="px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-bold">🔬 V4 (Mini 10×10×15 cm)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto w-full px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1">
+    <!-- Left 3D Viewport -->
+    <div class="lg:col-span-7 flex flex-col gap-3">
+      <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-gradient-to-b from-slate-900 to-black shadow-2xl flex-1 min-h-[490px] flex items-center justify-center">
+        <canvas id="simCanvas" width="840" height="540" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Top Overlay Badges -->
+        <div class="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
+          <div class="px-3 py-1 rounded-lg bg-slate-900/85 border border-amber-500/40 text-xs text-slate-200">
+            Enclosure: <strong class="text-amber-300">10 × 10 × 15 cm (ทรงสูง)</strong>
+          </div>
+          <div class="px-3 py-1 rounded-lg bg-slate-900/85 border border-slate-700/70 text-xs text-slate-300">
+            Grid: <strong id="grid-badge" class="text-rose-400">8×8 Lasers (64 หัว)</strong>
+          </div>
+          <div class="px-3 py-1 rounded-lg bg-slate-900/85 border border-slate-700/70 text-xs text-slate-300">
+            Pitch: <strong id="pitch-badge" class="text-sky-300">11.4 mm</strong>
+          </div>
+          <div class="px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-xs text-emerald-300 font-mono">
+            Active Voxels: <strong id="voxel-count">0</strong>
+          </div>
+        </div>
+
+        <div class="absolute bottom-3 left-3 right-3 flex flex-wrap justify-between items-center text-xs text-slate-400 pointer-events-none bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800/80">
+          <span>🖱️ ลากเมาส์เพื่อหมุนดูตู้ขนาดเล็ก 10×10×15 cm รอบทิศทาง 360°</span>
+          <span id="fps-readout" class="text-amber-400 font-mono">30.0 Hz Refresh</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="lg:col-span-5 flex flex-col gap-3.5">
+      <!-- Resolution / Point Density Selector (Key Feature for Mini Demo) -->
+      <div class="p-4 rounded-2xl bg-slate-900/95 border border-amber-500/40 shadow-lg">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-sm font-semibold text-white">1. เลือกจำนวนจุดเลเซอร์ (สำหรับทำ Demo เล็ก)</h2>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">เปรียบเทียบความละเอียด</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-res="4" class="res-btn p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left transition">
+            <div class="text-xs font-bold text-white">4 × 4 หัว</div>
+            <div class="text-[11px] text-amber-300 font-mono">รวม 16 จุดเลเซอร์</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">6×4×4 = 96 Voxels</div>
+          </button>
+          <button data-res="8" class="res-btn p-2.5 rounded-xl bg-amber-500/20 border border-amber-400 text-left transition">
+            <div class="text-xs font-bold text-white">8 × 8 หัว</div>
+            <div class="text-[11px] text-amber-300 font-mono">รวม 64 จุดเลเซอร์</div>
+            <div class="text-[11px] text-slate-300 mt-0.5">12×8×8 = 768 Voxels</div>
+          </button>
+          <button data-res="16" class="res-btn p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left transition">
+            <div class="text-xs font-bold text-white">16 × 16 หัว</div>
+            <div class="text-[11px] text-amber-300 font-mono">รวม 256 จุดเลเซอร์</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">16×16×16 = 4,096</div>
+          </button>
+        </div>
+        <div id="hw-spec-note" class="mt-2.5 text-xs text-slate-300 bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+          💡 <strong>สเปก 8×8 หัว (64 จุด) ในพื้นที่ 10×10 ซม.:</strong> ระยะห่างระหว่างหัวเลเซอร์ = <strong>11.4 มม.</strong> ใช้ Shift Register เพียง <strong>8 ตัว</strong> บัดกรีลงบอร์ดไข่ปลาได้ง่ายและประหยัดงบที่สุด
+        </div>
+      </div>
+
+      <!-- Model Selector (Original 6 + All 20 Presets) -->
+      <div class="p-4 rounded-2xl bg-slate-900/95 border border-slate-800 flex flex-col">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-sm font-semibold text-white">2. เลือกรูปทรงโมเดล 3D (ใช้โมเดลชุดเดิม)</h2>
+          <button id="btn-autoplay" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-medium transition">
+            ▶️ เล่นวนอัตโนมัติ
+          </button>
+        </div>
+        <div id="models-grid" class="grid grid-cols-2 gap-1.5 max-h-[210px] overflow-y-auto custom-scroll pr-1">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Hardware & Render Mode Controls -->
+      <div class="p-4 rounded-2xl bg-slate-900/95 border border-slate-800 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-white">3. โหมดแสดงผล & รอบหมุน</h2>
+          <button id="btn-slowmo" class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-xs font-medium transition">
+            ⚡ ดูลำแสงตอนหมุนช้า (60 RPM)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button id="render-pov" class="px-3 py-1.5 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left">
+            <div>👁️ ภาพติดตา (POV Mode)</div>
+            <div class="text-[11px] font-normal opacity-80">เหมือนใน Index แรก</div>
+          </button>
+          <button id="render-raw" class="px-3 py-1.5 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left">
+            <div>🔦 ยิงเลเซอร์จริง (Raw Hit)</div>
+            <div class="text-[11px] font-normal opacity-80">เฉพาะจุดกระทบใบพัด</div>
+          </button>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">ความเร็วมอเตอร์ (RPM)</span>
+            <span id="rpm-val" class="text-amber-400 font-mono font-semibold">1800 RPM</span>
+          </div>
+          <input id="rpm-slider" type="range" min="15" max="2400" value="1800" class="w-full accent-amber-400">
+        </div>
+
+        <div class="grid grid-cols-4 gap-1.5">
+          <button data-color="red" class="color-btn px-2 py-1 text-xs rounded-lg bg-rose-500/20 border border-rose-500 text-rose-300 font-medium">🔴 Red</button>
+          <button data-color="green" class="color-btn px-2 py-1 text-xs rounded-lg bg-slate-800 border border-slate-700 text-emerald-300 font-medium">🟢 Green</button>
+          <button data-color="cyan" class="color-btn px-2 py-1 text-xs rounded-lg bg-slate-800 border border-slate-700 text-cyan-300 font-medium">🔵 Cyan</button>
+          <button data-color="gold" class="color-btn px-2 py-1 text-xs rounded-lg bg-slate-800 border border-slate-700 text-amber-300 font-medium">🟡 Gold</button>
+        </div>
+
+        <div class="pt-1 grid grid-cols-3 gap-2 border-t border-slate-800 text-xs">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="toggle-beams" type="checkbox" checked class="accent-amber-400 w-3.5 h-3.5">
+            <span class="text-slate-300">ลำแสงเลเซอร์</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="toggle-blade" type="checkbox" checked class="accent-amber-400 w-3.5 h-3.5">
+            <span class="text-slate-300">ใบพัดเกลียว</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="toggle-orbit" type="checkbox" checked class="accent-amber-400 w-3.5 h-3.5">
+            <span class="text-slate-300">หมุนกล้อง</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Models from Original Index 1 first, followed by the rest of the 20 models
+    const MODELS = [
+      { id: 'cube', name: '📦 1. 3D Wire Cube (จาก Index 1)' },
+      { id: 'pyramid', name: '🔺 2. Pyramid (จาก Index 1)' },
+      { id: 'sine_wave', name: '🌊 3. Ripple Wave (จาก Index 1)' },
+      { id: 'text_3d', name: '✨ 4. "3D" Logo (จาก Index 1)' },
+      { id: 'dna', name: '🧬 5. Double Helix (จาก Index 1)' },
+      { id: 'sphere', name: '🌐 6. Hollow Sphere (จาก Index 1)' },
+      { id: 'talking_face', name: '🗣️ 7. หน้าคนพูด (Talking Face)' },
+      { id: 'standing_human', name: '🧍 8. คนยืนโบกมือ (Standing Human)' },
+      { id: 'dancing_human', name: '🕺 9. คนเต้น (Dancing Human)' },
+      { id: 'cat', name: '🐱 10. แมวกระดิกหาง (3D Cat)' },
+      { id: 'fish', name: '🐟 11. ปลาแหวกว่าย (Swimming Fish)' },
+      { id: 'building', name: '🏢 12. อาคารระฟ้า (Skyscraper)' },
+      { id: 'eiffel', name: '🗼 13. หอไอเฟล (Eiffel Tower)' },
+      { id: 'company_logo', name: '💎 14. โลโก้เพชรหมุน (Brand Gem)' },
+      { id: 'heart', name: '❤️ 15. หัวใจเต้น (Beating Heart)' },
+      { id: 'rocket', name: '🚀 16. จรวดอวกาศ (Space Rocket)' },
+      { id: 'car', name: '🚗 17. รถสปอร์ต (Concept Car)' },
+      { id: 'crown', name: '👑 18. มงกุฎเพชร (Royal Crown)' },
+      { id: 'butterfly', name: '🦋 19. ผีเสื้อขยับปีก (Butterfly)' },
+      { id: 'tornado', name: '🌪️ 20. พายุทอร์นาโด (Vortex)' }
+    ];
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    let rotY = 0.62;
+    let rotX = 0.32;
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+
+    // Grid resolution N (4, 8, or 16)
+    let gridN = 8; // Default to 8x8 (64 lasers) so user immediately sees fewer points than 16x16
+    let gridY = 12; // Taller vertical slices for 10x10x15 cm proportion
+    let shapeMode = 'cube';
+    let renderMode = 'pov';
+    let laserColor = 'red';
+    let bladeAngle = 0;
+    let rpm = 1800;
+    let showBeams = true;
+    let showBlade = true;
+    let autoOrbit = true;
+    let autoShowcase = false;
+    let autoShowcaseTimer = null;
+    let time = 0;
+
+    const colorPalettes = {
+      red: { main: '255, 55, 85', core: '255, 230, 235', beam: '244, 63, 94' },
+      green: { main: '16, 235, 129', core: '220, 255, 235', beam: '16, 185, 129' },
+      cyan: { main: '56, 189, 248', core: '225, 245, 255', beam: '14, 165, 233' },
+      gold: { main: '251, 191, 36', core: '254, 249, 195', beam: '245, 158, 11' }
+    };
+
+    const modelsGrid = document.getElementById('models-grid');
+    function selectModel(id) {
+      shapeMode = id;
+      document.querySelectorAll('.model-btn').forEach(b => {
+        if (b.dataset.id === id) {
+          b.className = 'model-btn px-2.5 py-1.5 text-xs rounded-xl bg-amber-500 text-slate-950 font-bold transition text-left truncate shadow';
+        } else {
+          b.className = 'model-btn px-2.5 py-1.5 text-xs rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-medium transition text-left truncate';
+        }
+      });
+    }
+
+    MODELS.forEach(m => {
+      const btn = document.createElement('button');
+      btn.dataset.id = m.id;
+      btn.textContent = m.name;
+      btn.onclick = () => {
+        if (autoShowcase) toggleAutoShowcase();
+        selectModel(m.id);
+      };
+      modelsGrid.appendChild(btn);
+    });
+    selectModel('cube');
+
+    // Resolution Switcher (4x4 = 16 points, 8x8 = 64 points, 16x16 = 256 points)
+    const gridBadge = document.getElementById('grid-badge');
+    const pitchBadge = document.getElementById('pitch-badge');
+    const hwSpecNote = document.getElementById('hw-spec-note');
+
+    function setResolution(n) {
+      gridN = n;
+      gridY = n === 4 ? 6 : (n === 8 ? 12 : 16);
+      document.querySelectorAll('.res-btn').forEach(b => {
+        if (parseInt(b.dataset.res, 10) === n) {
+          b.className = 'res-btn p-2.5 rounded-xl bg-amber-500/20 border border-amber-400 text-left transition';
+        } else {
+          b.className = 'res-btn p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left transition';
+        }
+      });
+
+      if (n === 4) {
+        gridBadge.textContent = '4×4 Lasers (16 หัว)';
+        pitchBadge.textContent = '25.0 mm';
+        hwSpecNote.innerHTML = '💡 <strong>สเปก 4×4 หัว (รวม 16 จุดเลเซอร์) ในตู้ 10×10×15 ซม.:</strong> ระยะห่างระหว่างหัว = <strong>25 มม.</strong> ใช้ไอซี 74HC595 เพียง <strong>2 ตัว</strong> ต่อกับ Arduino Uno ได้ทันที เหมาะสำหรับทำ Proof-of-Concept ขั้นแรกสุด';
+      } else if (n === 8) {
+        gridBadge.textContent = '8×8 Lasers (64 หัว)';
+        pitchBadge.textContent = '11.4 mm';
+        hwSpecNote.innerHTML = '💡 <strong>สเปก 8×8 หัว (รวม 64 จุดเลเซอร์) ในตู้ 10×10×15 ซม.:</strong> ระยะห่างระหว่างหัว = <strong>11.4 มม.</strong> ใช้ Shift Register <strong>8 ตัว</strong> เห็นรูปทรง 3D ชัดเจนและจัดวางลงพื้นที่ 8×8 ซม. ได้พอดี';
+      } else {
+        gridBadge.textContent = '16×16 Lasers (256 หัว)';
+        pitchBadge.textContent = '5.3 mm (อัดแน่น)';
+        hwSpecNote.innerHTML = '💡 <strong>สเปก 16×16 หัว (รวม 256 จุดเลเซอร์) ในตู้ 10×10×15 ซม.:</strong> ระยะห่างระหว่างหัวแคบเพียง <strong>5.3 มม.</strong> (หัวเลเซอร์ทองเหลือง 6 มม. จะเบียดกัน ต้องใช้เลเซอร์ไดโอดเปลือยขนาด 3.8 มม. หรือขยายตู้เป็น 15×15 ซม.)';
+      }
+    }
+
+    document.querySelectorAll('.res-btn').forEach(btn => {
+      btn.onclick = () => setResolution(parseInt(btn.dataset.res, 10));
+    });
+
+    const btnAutoplay = document.getElementById('btn-autoplay');
+    function toggleAutoShowcase() {
+      autoShowcase = !autoShowcase;
+      if (autoShowcase) {
+        btnAutoplay.textContent = '⏸️ หยุดเล่นวน';
+        btnAutoplay.className = 'px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500 text-rose-300 text-xs font-semibold transition';
+        autoShowcaseTimer = setInterval(() => {
+          const idx = MODELS.findIndex(m => m.id === shapeMode);
+          const next = MODELS[(idx + 1) % MODELS.length];
+          selectModel(next.id);
+        }, 3500);
+      } else {
+        btnAutoplay.textContent = '▶️ เล่นวนอัตโนมัติ';
+        btnAutoplay.className = 'px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-medium transition';
+        clearInterval(autoShowcaseTimer);
+      }
+    }
+    btnAutoplay.onclick = toggleAutoShowcase;
+
+    const btnRenderPov = document.getElementById('render-pov');
+    const btnRenderRaw = document.getElementById('render-raw');
+    const rpmSlider = document.getElementById('rpm-slider');
+    const rpmVal = document.getElementById('rpm-val');
+    const fpsReadout = document.getElementById('fps-readout');
+    const voxelCountEl = document.getElementById('voxel-count');
+
+    function setRenderMode(mode) {
+      renderMode = mode;
+      if (mode === 'pov') {
+        btnRenderPov.className = 'px-3 py-1.5 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left';
+        btnRenderRaw.className = 'px-3 py-1.5 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left';
+      } else {
+        btnRenderRaw.className = 'px-3 py-1.5 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left';
+        btnRenderPov.className = 'px-3 py-1.5 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left';
+      }
+    }
+    btnRenderPov.onclick = () => setRenderMode('pov');
+    btnRenderRaw.onclick = () => setRenderMode('raw');
+
+    document.getElementById('btn-slowmo').onclick = () => {
+      setRenderMode('raw');
+      rpm = 60;
+      rpmSlider.value = 60;
+      rpmVal.textContent = '60 RPM';
+      fpsReadout.textContent = '1.0 Hz Refresh (Slow-Mo)';
+    };
+
+    document.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        laserColor = btn.dataset.color;
+        document.querySelectorAll('.color-btn').forEach(b => {
+          b.classList.remove('border-rose-500', 'bg-rose-500/20');
+          b.classList.add('border-slate-700', 'bg-slate-800');
+        });
+        btn.classList.remove('border-slate-700', 'bg-slate-800');
+        btn.classList.add('border-rose-500', 'bg-rose-500/20');
+      });
+    });
+
+    rpmSlider.oninput = (e) => {
+      rpm = parseInt(e.target.value, 10);
+      rpmVal.textContent = `${rpm} RPM`;
+      fpsReadout.textContent = `${(rpm / 60).toFixed(1)} Hz Refresh`;
+    };
+    document.getElementById('toggle-beams').onchange = (e) => { showBeams = e.target.checked; };
+    document.getElementById('toggle-blade').onchange = (e) => { showBlade = e.target.checked; };
+    document.getElementById('toggle-orbit').onchange = (e) => { autoOrbit = e.target.checked; };
+
+    canvas.addEventListener('pointerdown', e => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointerup', () => { isDragging = false; });
+    canvas.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      rotY += (e.clientX - lastX) * 0.008;
+      rotX = Math.max(-0.3, Math.min(1.25, rotX + (e.clientY - lastY) * 0.008));
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    function project(x, y, z) {
+      const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+      const x1 = x * cosY - z * sinY;
+      const z1 = z * cosY + x * sinY;
+      const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+      const y2 = y * cosX - z1 * sinX;
+      const z2 = z1 * cosX + y * sinX;
+      const fov = 640;
+      const dist = 420;
+      const scale = fov / (dist + z2);
+      return {
+        x: canvas.width / 2 + x1 * scale,
+        y: canvas.height / 2 - y2 * scale,
+        z: z2,
+        s: scale
+      };
+    }
+
+    // Master 16x16x16 Voxel Generator (so all models work seamlessly at any downsampled resolution)
+    const masterGrid = Array.from({ length: 16 }, () =>
+      Array.from({ length: 16 }, () => new Uint8Array(16))
+    );
+
+    function buildMasterModel(t) {
+      for (let x = 0; x < 16; x++) {
+        for (let y = 0; y < 16; y++) {
+          masterGrid[x][y].fill(0);
+        }
+      }
+
+      const setV = (x, y, z) => {
+        const ix = Math.round(x), iy = Math.round(y), iz = Math.round(z);
+        if (ix >= 0 && ix < 16 && iy >= 0 && iy < 16 && iz >= 0 && iz < 16) {
+          masterGrid[ix][iy][iz] = 1;
+        }
+      };
+
+      const drawLine3D = (x1, y1, z1, x2, y2, z2, steps = 16) => {
+        for (let i = 0; i <= steps; i++) {
+          const u = i / steps;
+          setV(x1 + (x2 - x1) * u, y1 + (y2 - y1) * u, z1 + (z2 - z1) * u);
+        }
+      };
+
+      if (shapeMode === 'cube') {
+        const min = 2, max = 13;
+        for (let i = min; i <= max; i++) {
+          setV(i, min, min); setV(i, max, min); setV(i, min, max); setV(i, max, max);
+          setV(min, i, min); setV(max, i, min); setV(min, i, max); setV(max, i, max);
+          setV(min, min, i); setV(max, min, i); setV(min, max, i); setV(max, max, i);
+        }
+      }
+      else if (shapeMode === 'pyramid') {
+        for (let y = 2; y <= 13; y++) {
+          const r = ((13 - y) / 11) * 5.5;
+          drawLine3D(7.5 - r, y, 7.5 - r, 7.5 + r, y, 7.5 - r, 8);
+          drawLine3D(7.5 + r, y, 7.5 - r, 7.5 + r, y, 7.5 + r, 8);
+          drawLine3D(7.5 + r, y, 7.5 + r, 7.5 - r, y, 7.5 + r, 8);
+          drawLine3D(7.5 - r, y, 7.5 + r, 7.5 - r, y, 7.5 - r, 8);
+        }
+      }
+      else if (shapeMode === 'sine_wave') {
+        for (let x = 0; x < 16; x++) {
+          for (let z = 0; z < 16; z++) {
+            const d = Math.hypot(x - 7.5, z - 7.5);
+            const y = Math.round(7.5 + 4.8 * Math.sin(d * 0.65 - t * 3.5));
+            setV(x, y, z);
+          }
+        }
+      }
+      else if (shapeMode === 'text_3d') {
+        for (let z = 6; z <= 9; z++) {
+          for (let y = 3; y <= 12; y++) {
+            for (let x = 2; x <= 6; x++) {
+              if (y === 12 || y === 7 || y === 3 || x === 6) setV(x, y, z);
+            }
+            for (let x = 9; x <= 13; x++) {
+              if (x === 9 || ((y === 12 || y === 3) && x <= 12) || (x === 13 && y > 3 && y < 12)) setV(x, y, z);
+            }
+          }
+        }
+      }
+      else if (shapeMode === 'dna') {
+        for (let y = 1; y < 15; y++) {
+          const ang = (y / 14) * Math.PI * 2.2 + t * 2.5;
+          const x1 = 7.5 + Math.cos(ang) * 5.0;
+          const z1 = 7.5 + Math.sin(ang) * 5.0;
+          const x2 = 7.5 + Math.cos(ang + Math.PI) * 5.0;
+          const z2 = 7.5 + Math.sin(ang + Math.PI) * 5.0;
+          setV(x1, y, z1); setV(x2, y, z2);
+          if (y % 2 === 0) drawLine3D(x1, y, z1, x2, y, z2, 8);
+        }
+      }
+      else if (shapeMode === 'sphere') {
+        for (let x = 0; x < 16; x++) {
+          for (let y = 0; y < 16; y++) {
+            for (let z = 0; z < 16; z++) {
+              const d = Math.hypot(x - 7.5, y - 7.5, z - 7.5);
+              if (Math.abs(d - 6.0) < 0.65) setV(x, y, z);
+            }
+          }
+        }
+      }
+      else if (shapeMode === 'talking_face') {
+        const mouthOpen = Math.round((Math.sin(t * 6) + 1) * 1.4);
+        for (let x = 0; x < 16; x++) {
+          for (let y = 0; y < 16; y++) {
+            for (let z = 0; z < 16; z++) {
+              const d = Math.hypot((x - 7.5) / 5.5, (y - 8.0) / 6.5, (z - 7.5) / 5.0);
+              if (Math.abs(d - 1.0) < 0.12 && (y % 2 === 0 || x === 7 || x === 8)) setV(x, y, z);
+            }
+          }
+        }
+        setV(5, 10, 3); setV(5, 11, 3); setV(10, 10, 3); setV(10, 11, 3);
+        setV(7, 8, 2); setV(8, 8, 2);
+        for (let mx = 5; mx <= 10; mx++) {
+          setV(mx, 5 + Math.floor(mouthOpen / 2), 3);
+          setV(mx, 5 - Math.ceil(mouthOpen / 2), 3);
+        }
+      }
+      else if (shapeMode === 'standing_human') {
+        const waveAng = Math.sin(t * 4) * 2.5;
+        for (let a = 0; a < 12; a++) {
+          const ang = (a / 12) * Math.PI * 2;
+          setV(7.5 + Math.cos(ang) * 1.8, 13.5, 7.5 + Math.sin(ang) * 1.8);
+        }
+        drawLine3D(5, 11, 7.5, 10, 11, 7.5);
+        drawLine3D(7.5, 12, 7.5, 7.5, 7, 7.5);
+        drawLine3D(6, 7, 7.5, 5, 1, 6.5);
+        drawLine3D(9, 7, 7.5, 10, 1, 8.5);
+        drawLine3D(5, 11, 7.5, 3, 7, 7.5);
+        drawLine3D(10, 11, 7.5, 13, 11 + waveAng, 6.5);
+      }
+      else if (shapeMode === 'dancing_human') {
+        const beat = t * 5;
+        const hip = Math.sin(beat) * 2.0;
+        drawLine3D(7.5, 13, 7.5, 7.5 + hip, 6.5, 7.5);
+        drawLine3D(7.5, 11, 7.5, 3, 11 + Math.sin(beat) * 3, 7.5 + Math.cos(beat) * 2);
+        drawLine3D(7.5, 11, 7.5, 12, 11 - Math.sin(beat) * 3, 7.5 - Math.cos(beat) * 2);
+        drawLine3D(7.5 + hip, 6.5, 7.5, 4.5, 1, 7.5 - Math.sin(beat) * 2.5);
+        drawLine3D(7.5 + hip, 6.5, 7.5, 10.5, 1, 7.5 + Math.sin(beat) * 2.5);
+      }
+      else if (shapeMode === 'cat') {
+        for (let x = 5; x <= 11; x++) {
+          setV(x, 7, 6); setV(x, 7, 9); setV(x, 5, 6); setV(x, 5, 9);
+        }
+        drawLine3D(5, 5, 6, 5, 1, 6); drawLine3D(5, 5, 9, 5, 1, 9);
+        drawLine3D(10, 5, 6, 10, 1, 6); drawLine3D(10, 5, 9, 10, 1, 9);
+        for (let y = 7; y <= 10; y++) {
+          for (let z = 6; z <= 9; z++) setV(3, y, z);
+        }
+        setV(3, 12, 6); setV(3, 12, 9);
+        drawLine3D(11, 7, 7.5, 14, 12, 7.5 + Math.sin(t * 5) * 2.8);
+      }
+      else if (shapeMode === 'fish') {
+        for (let x = 2; x <= 13; x++) {
+          const u = (x - 2) / 11;
+          const cz = 7.5 + Math.sin(t * 6 - u * 4.5) * (0.6 + u * 2.4);
+          const halfH = u < 0.7 ? Math.sin((u / 0.7) * Math.PI) * 4.0 : (u - 0.7) * 11;
+          drawLine3D(x, 7.5 - halfH, cz, x, 7.5 + halfH, cz, 6);
+        }
+      }
+      else if (shapeMode === 'building') {
+        for (let y = 1; y <= 13; y++) {
+          for (let x = 4; x <= 11; x++) {
+            for (let z = 4; z <= 11; z++) {
+              if (((x === 4 || x === 11) && (z === 4 || z === 11)) || (y % 4 === 1 && (x === 4 || x === 11 || z === 4 || z === 11))) {
+                setV(x, y, z);
+              }
+            }
+          }
+        }
+        drawLine3D(7.5, 1, 7.5, 7.5, 15, 7.5);
+      }
+      else if (shapeMode === 'eiffel') {
+        for (let y = 1; y <= 15; y++) {
+          const s = Math.max(0.5, Math.pow(1 - (y - 1) / 14, 1.6) * 5.5);
+          setV(7.5 - s, y, 7.5 - s); setV(7.5 + s, y, 7.5 - s);
+          setV(7.5 - s, y, 7.5 + s); setV(7.5 + s, y, 7.5 + s);
+          if (y === 6 || y === 10) {
+            drawLine3D(7.5 - s, y, 7.5 - s, 7.5 + s, y, 7.5 - s, 6);
+            drawLine3D(7.5 - s, y, 7.5 + s, 7.5 + s, y, 7.5 + s, 6);
+          }
+        }
+      }
+      else if (shapeMode === 'company_logo') {
+        const ang = t * 2, r = 5.2;
+        const top = [7.5, 14, 7.5], bot = [7.5, 1, 7.5];
+        const pts = [0, 1, 2, 3].map(i => [7.5 + Math.cos(ang + i * Math.PI / 2) * r, 7.5, 7.5 + Math.sin(ang + i * Math.PI / 2) * r]);
+        for (let i = 0; i < 4; i++) {
+          const p1 = pts[i], p2 = pts[(i + 1) % 4];
+          drawLine3D(top[0], top[1], top[2], p1[0], p1[1], p1[2], 8);
+          drawLine3D(bot[0], bot[1], bot[2], p1[0], p1[1], p1[2], 8);
+          drawLine3D(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], 8);
+        }
+      }
+      else if (shapeMode === 'heart') {
+        const pulse = 1 + 0.15 * Math.sin(t * 7);
+        for (let x = 1; x < 15; x++) {
+          for (let y = 1; y < 15; y++) {
+            for (let z = 4; z < 12; z++) {
+              const nx = (x - 7.5) / (4.8 * pulse), ny = (y - 6.5) / (4.8 * pulse), nz = (z - 7.5) / (2.5 * pulse);
+              const a = nx * nx + 2.2 * nz * nz + ny * ny - 1;
+              const val = a * a * a - (nx * nx + 0.1 * nz * nz) * (ny * ny * ny);
+              if (val < 0 && val > -0.35) setV(x, y, z);
+            }
+          }
+        }
+      }
+      else if (shapeMode === 'rocket') {
+        for (let y = 4; y <= 14; y++) {
+          const r = y > 10 ? (14.5 - y) * 0.8 : 2.8;
+          for (let a = 0; a < 8; a++) {
+            const ang = (a / 8) * Math.PI * 2 + t;
+            setV(7.5 + Math.cos(ang) * r, y, 7.5 + Math.sin(ang) * r);
+          }
+        }
+        drawLine3D(5, 5, 7.5, 2, 2, 7.5); drawLine3D(10, 5, 7.5, 13, 2, 7.5);
+      }
+      else if (shapeMode === 'car') {
+        drawLine3D(2, 4, 4, 13, 4, 4); drawLine3D(2, 4, 11, 13, 4, 11);
+        drawLine3D(2, 7, 4, 13, 7, 4); drawLine3D(2, 7, 11, 13, 7, 11);
+        drawLine3D(5, 10, 5, 10, 10, 5); drawLine3D(5, 10, 10, 10, 10, 10);
+        drawLine3D(3, 7, 4, 5, 10, 5); drawLine3D(12, 7, 4, 10, 10, 5);
+      }
+      else if (shapeMode === 'crown') {
+        for (let i = 0; i < 20; i++) {
+          const ang = (i / 20) * Math.PI * 2 + t;
+          const x = 7.5 + Math.cos(ang) * 5.2, z = 7.5 + Math.sin(ang) * 5.2;
+          const topY = Math.round(5 + Math.max(0, Math.sin(ang * 5)) * 6);
+          drawLine3D(x, 4, z, x, topY, z, 6);
+        }
+      }
+      else if (shapeMode === 'butterfly') {
+        const flap = Math.sin(t * 7) * 0.85;
+        drawLine3D(7.5, 5, 3, 7.5, 9, 12);
+        for (let u = 1; u <= 6; u++) {
+          const wy = 7.5 + Math.sin(flap) * u, wx = Math.cos(flap) * u;
+          drawLine3D(7.5 - wx, wy, 4, 7.5 - wx, wy, 11, 6);
+          drawLine3D(7.5 + wx, wy, 4, 7.5 + wx, wy, 11, 6);
+        }
+      }
+      else if (shapeMode === 'tornado') {
+        for (let y = 1; y < 15; y++) {
+          const r = 0.8 + (y / 14) * 5.8;
+          for (let k = 0; k < 4; k++) {
+            const ang = (y * 0.55) - t * 6 + (k * Math.PI / 2);
+            setV(7.5 + Math.cos(ang) * r, y, 7.5 + Math.sin(ang) * r);
+          }
+        }
+      }
+    }
+
+    // Check if downsampled cell (gx, gy, gz) in [0..gridN-1, 0..gridY-1, 0..gridN-1] is active
+    function isCellActive(gx, gy, gz) {
+      const x0 = Math.floor((gx / gridN) * 16);
+      const x1 = Math.max(x0, Math.floor(((gx + 1) / gridN) * 16) - 1);
+      const y0 = Math.floor((gy / gridY) * 16);
+      const y1 = Math.max(y0, Math.floor(((gy + 1) / gridY) * 16) - 1);
+      const z0 = Math.floor((gz / gridN) * 16);
+      const z1 = Math.max(z0, Math.floor(((gz + 1) / gridN) * 16) - 1);
+
+      for (let ix = x0; ix <= x1; ix++) {
+        for (let iy = y0; iy <= y1; iy++) {
+          for (let iz = z0; iz <= z1; iz++) {
+            if (masterGrid[ix][iy][iz]) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function getBladeHeightAtColumn(gx, gz, currentBladeAngle) {
+      const center = (gridN - 1) / 2;
+      const dx = gx - center;
+      const dz = gz - center;
+      const colAngle = (Math.atan2(dz, dx) + Math.PI * 2) % (Math.PI * 2);
+      const normBlade = (currentBladeAngle % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const relAngle = (colAngle - normBlade + Math.PI * 2) % (Math.PI * 2);
+      return Math.round((relAngle / (Math.PI * 2)) * (gridY - 1));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      time += 0.022;
+      bladeAngle += (rpm / 60) * 0.08;
+      buildMasterModel(time);
+
+      const pal = colorPalettes[laserColor];
+
+      // 10 x 10 x 15 cm proportion: Width = 92, Depth = 92, Height = 138 (1 : 1 : 1.5 ratio)
+      const halfW = 92;
+      const halfH = 138;
+
+      // Outer 10x10x15 cm Rectangular Enclosure
+      const corners = [
+        [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+        [-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]
+      ].map(c => project(c[0] * halfW, c[1] * halfH, c[2] * halfW));
+
+      const edges = [
+        [0,1],[1,2],[2,3],[3,0],
+        [4,5],[5,6],[6,7],[7,4],
+        [0,4],[1,5],[2,6],[3,7]
+      ];
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.28)';
+      ctx.lineWidth = 1.3;
+      edges.forEach(e => {
+        ctx.beginPath();
+        ctx.moveTo(corners[e[0]].x, corners[e[0]].y);
+        ctx.lineTo(corners[e[1]].x, corners[e[1]].y);
+        ctx.stroke();
+      });
+
+      // Dimension Labels on Box
+      const lblTop = project(0, halfH + 14, -halfW);
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.75)';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText('10 cm × 10 cm (Top Laser Plate)', lblTop.x - 70, lblTop.y);
+
+      const lblSide = project(halfW + 12, 0, 0);
+      ctx.fillText('15 cm Height', lblSide.x, lblSide.y);
+
+      // Top Laser Emitter Plate (gridN x gridN diodes)
+      for (let gx = 0; gx < gridN; gx++) {
+        for (let gz = 0; gz < gridN; gz++) {
+          const nx = gridN === 1 ? 0 : (gx / (gridN - 1)) - 0.5;
+          const nz = gridN === 1 ? 0 : (gz / (gridN - 1)) - 0.5;
+          const wx = nx * halfW * 1.45;
+          const wz = nz * halfW * 1.45;
+          const p = project(wx, halfH, wz);
+          const dotSize = gridN === 4 ? 4.0 : (gridN === 8 ? 3.0 : 2.0);
+          ctx.fillStyle = `rgba(${pal.main}, 0.65)`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, dotSize * p.s, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Central Motor Shaft
+      const shaftTop = project(0, halfH * 0.85, 0);
+      const shaftBot = project(0, -halfH, 0);
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(shaftTop.x, shaftTop.y);
+      ctx.lineTo(shaftBot.x, shaftBot.y);
+      ctx.stroke();
+
+      // Rotating Helical Blade inside 10x10x15 cm box
+      if (showBlade) {
+        const steps = 32;
+        let prevOuter = null;
+        for (let s = 0; s <= steps; s++) {
+          const frac = s / steps;
+          const ang = bladeAngle + frac * Math.PI * 2;
+          const wy = (frac - 0.5) * halfH * 1.45;
+          const r = halfW * 0.86;
+          const pInner = project(0, wy, 0);
+          const pOuter = project(Math.cos(ang) * r, wy, Math.sin(ang) * r);
+
+          ctx.strokeStyle = 'rgba(125, 211, 252, 0.25)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(pInner.x, pInner.y);
+          ctx.lineTo(pOuter.x, pOuter.y);
+          ctx.stroke();
+
+          if (prevOuter) {
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(prevOuter.x, prevOuter.y);
+            ctx.lineTo(pOuter.x, pOuter.y);
+            ctx.stroke();
+          }
+          prevOuter = pOuter;
+        }
+      }
+
+      // Voxels & Top-Down Laser Beams
+      let activeVoxels = 0;
+      const povFactor = Math.min(1, rpm / 600);
+      // Scale dot size larger when fewer points are used so each laser spot stands out clearly
+      const baseRadius = gridN === 4 ? 6.2 : (gridN === 8 ? 4.5 : 3.0);
+
+      for (let gx = 0; gx < gridN; gx++) {
+        for (let gz = 0; gz < gridN; gz++) {
+          const bladeY = getBladeHeightAtColumn(gx, gz, bladeAngle);
+          const nx = (gx / (gridN - 1)) - 0.5;
+          const nz = (gz / (gridN - 1)) - 0.5;
+          const wx = nx * halfW * 1.45;
+          const wz = nz * halfW * 1.45;
+
+          if (renderMode === 'raw') {
+            if (isCellActive(gx, bladeY, gz)) {
+              activeVoxels++;
+              const ny = (bladeY / (gridY - 1)) - 0.5;
+              const wy = ny * halfH * 1.45;
+              const pHit = project(wx, wy, wz);
+              const pTop = project(wx, halfH, wz);
+
+              if (showBeams) {
+                ctx.strokeStyle = `rgba(${pal.beam}, 0.92)`;
+                ctx.lineWidth = gridN === 4 ? 2.4 : 1.8;
+                ctx.beginPath();
+                ctx.moveTo(pTop.x, pTop.y);
+                ctx.lineTo(pHit.x, pHit.y);
+                ctx.stroke();
+              }
+
+              ctx.fillStyle = `rgb(${pal.main})`;
+              ctx.beginPath();
+              ctx.arc(pHit.x, pHit.y, (baseRadius + 1.2) * pHit.s, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#ffffff';
+              ctx.beginPath();
+              ctx.arc(pHit.x, pHit.y, (baseRadius * 0.48) * pHit.s, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else {
+            // Original Index 1 POV style
+            for (let gy = 0; gy < gridY; gy++) {
+              if (!isCellActive(gx, gy, gz)) continue;
+              activeVoxels++;
+              const ny = (gy / (gridY - 1)) - 0.5;
+              const wy = ny * halfH * 1.45;
+
+              const vAngle = (Math.atan2(wz, wx) + Math.PI * 2) % (Math.PI * 2);
+              const bAngle = (bladeAngle % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+              const diff = Math.abs(vAngle - bAngle);
+              const alpha = povFactor > 0.85 ? 0.95 : Math.max(0.15, 1 - (diff / Math.PI));
+
+              const p = project(wx, wy, wz);
+
+              if (showBeams && (gy === bladeY || Math.random() < 0.15)) {
+                const pTop = project(wx, halfH, wz);
+                ctx.strokeStyle = `rgba(${pal.beam}, ${0.22 * alpha})`;
+                ctx.lineWidth = gridN === 4 ? 1.5 : 1.0;
+                ctx.beginPath();
+                ctx.moveTo(pTop.x, pTop.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+              }
+
+              ctx.fillStyle = `rgba(${pal.main}, ${alpha})`;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, baseRadius * p.s, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = `rgba(${pal.core}, ${alpha * 0.95})`;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, (baseRadius * 0.45) * p.s, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+      }
+
+      voxelCountEl.textContent = activeVoxels;
+
+      if (!isDragging && autoOrbit) {
+        rotY += 0.0035;
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
