@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Volumetric Display Demo | 30×30×30 cm (16×16 Laser Matrix)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    canvas {
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/70 backdrop-blur sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 rounded-full bg-rose-500 animate-pulse shadow-[0_0_12px_#f43f5e]"></div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight text-white">HoloVol 3D — Swept-Volume Volumetric Display</h1>
+          <p class="text-xs text-slate-400">Interactive 360° True-3D Display Simulator (30×30×30 cm Enclosure | 16×16 Top-Down Laser Matrix)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 font-medium">256 Laser Channels</span>
+        <span class="px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-300 font-medium">4,096 Voxels (16³)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+    <!-- Left 3D Viewport -->
+    <div class="lg:col-span-8 flex flex-col gap-3">
+      <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-gradient-to-b from-slate-900 to-black shadow-2xl flex-1 min-h-[440px] flex items-center justify-center">
+        <canvas id="simCanvas" width="800" height="500" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Overlay Badges -->
+        <div class="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
+          <div class="px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-700/70 text-xs text-slate-300">
+            Enclosure: <strong class="text-white">30 × 30 × 30 cm</strong>
+          </div>
+          <div class="px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-700/70 text-xs text-slate-300">
+            Laser Pitch: <strong class="text-white">1.5 cm</strong>
+          </div>
+        </div>
+
+        <div class="absolute bottom-3 left-3 right-3 flex flex-wrap justify-between items-center text-xs text-slate-400 pointer-events-none bg-slate-950/70 px-3 py-1.5 rounded-lg border border-slate-800/80">
+          <span>🖱️ ลากเมาส์หรือใช้นิ้วปัดเพื่อหมุนดูมุมมองรอบทิศทาง 360° (เห็นมิติความลึกด้านข้างจริง)</span>
+          <span id="fps-readout" class="text-rose-400 font-mono">30.0 Hz Refresh</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Controls & Specs -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+      <!-- Preset 3D Models -->
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
+        <h2 class="text-sm font-semibold text-white mb-2.5">1. เลือกรูปทรง 3D (Voxel Preset)</h2>
+        <div class="grid grid-cols-2 gap-2">
+          <button data-mode="cube" class="mode-btn px-3 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition">📦 3D Wire Cube</button>
+          <button data-mode="pyramid" class="mode-btn px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">🔺 Pyramid</button>
+          <button data-mode="wave" class="mode-btn px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">🌊 Ripple Wave</button>
+          <button data-mode="text" class="mode-btn px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">✨ "3D" Logo</button>
+          <button data-mode="helix" class="mode-btn px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">🧬 Double Helix</button>
+          <button data-mode="sphere" class="mode-btn px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">🌐 Hollow Sphere</button>
+        </div>
+      </div>
+
+      <!-- Hardware Parameters -->
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+        <h2 class="text-sm font-semibold text-white">2. ตั้งค่าฮาร์ดแวร์จำลอง</h2>
+
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">ความเร็วมอเตอร์กลาง (BLDC RPM)</span>
+            <span id="rpm-val" class="text-rose-400 font-mono font-semibold">1800 RPM</span>
+          </div>
+          <input id="rpm-slider" type="range" min="120" max="2400" value="1800" class="w-full accent-rose-500">
+          <p class="text-[11px] text-slate-400 mt-0.5">ลองลด RPM ลงต่ำกว่า 300 เพื่อดูจังหวะเลเซอร์ยิงตกกระทบใบพัดทีละชั้น</p>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">สีของหัวเลเซอร์ (Laser Wavelength)</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button data-color="red" class="color-btn px-2 py-1.5 text-xs rounded-lg bg-rose-500/20 border border-rose-500 text-rose-300 font-medium">650nm Red</button>
+            <button data-color="green" class="color-btn px-2 py-1.5 text-xs rounded-lg bg-slate-800 border border-slate-700 text-emerald-300 font-medium">520nm Green</button>
+            <button data-color="cyan" class="color-btn px-2 py-1.5 text-xs rounded-lg bg-slate-800 border border-slate-700 text-cyan-300 font-medium">450nm Blue</button>
+          </div>
+        </div>
+
+        <div class="pt-1 space-y-2 border-t border-slate-800 text-xs">
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-slate-300">แสดงลำแสงเลเซอร์ยิงจากด้านบน</span>
+            <input id="toggle-beams" type="checkbox" checked class="accent-rose-500 w-4 h-4">
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-slate-300">แสดงใบพัดเกลียวหมุน (Helical Rotor)</span>
+            <input id="toggle-blade" type="checkbox" checked class="accent-rose-500 w-4 h-4">
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-slate-300">หมุนมุมกล้องอัตโนมัติ (Auto-Orbit)</span>
+            <input id="toggle-orbit" type="checkbox" checked class="accent-rose-500 w-4 h-4">
+          </label>
+        </div>
+      </div>
+
+      <!-- Technical Spec Summary -->
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs space-y-1.5">
+        <h2 class="text-sm font-semibold text-white mb-1">3. สเปกต้นแบบ (30 cm Event Showcase)</h2>
+        <div class="flex justify-between text-slate-300"><span>ขนาดตัวเครื่อง:</span><span class="text-white font-medium">30 × 30 × 30 cm</span></div>
+        <div class="flex justify-between text-slate-300"><span>เมทริกซ์เลเซอร์ด้านบน:</span><span class="text-white font-medium">16 × 16 หัว (Pitch 1.5 cm)</span></div>
+        <div class="flex justify-between text-slate-300"><span>ชิปขับสัญญาณ:</span><span class="text-white font-medium">32× TPIC6B595 (SPI 10MHz)</span></div>
+        <div class="flex justify-between text-slate-300"><span>เซนเซอร์ซิงค์รอบหมุน:</span><span class="text-white font-medium">Hall Effect Zero-Crossing</span></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    let rotY = 0.65;
+    let rotX = 0.35;
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+    let shapeMode = 'cube';
+    let laserColor = 'red';
+    let bladeAngle = 0;
+    let rpm = 1800;
+    let showBeams = true;
+    let showBlade = true;
+    let autoOrbit = true;
+    let time = 0;
+
+    const colorPalettes = {
+      red: { main: '255, 55, 85', core: '255, 220, 225', beam: '244, 63, 94' },
+      green: { main: '16, 235, 129', core: '215, 255, 235', beam: '16, 185, 129' },
+      cyan: { main: '56, 189, 248', core: '220, 245, 255', beam: '14, 165, 233' }
+    };
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        shapeMode = btn.dataset.mode;
+        document.querySelectorAll('.mode-btn').forEach(b => {
+          b.className = 'mode-btn px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition';
+        });
+        btn.className = 'mode-btn px-3 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition';
+      });
+    });
+
+    document.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        laserColor = btn.dataset.color;
+        document.querySelectorAll('.color-btn').forEach(b => {
+          b.classList.remove('border-rose-500', 'border-emerald-500', 'border-cyan-500', 'bg-rose-500/20');
+          b.classList.add('border-slate-700', 'bg-slate-800');
+        });
+        btn.classList.remove('border-slate-700', 'bg-slate-800');
+        btn.classList.add('border-rose-500', 'bg-rose-500/20');
+      });
+    });
+
+    document.getElementById('rpm-slider').oninput = (e) => {
+      rpm = parseInt(e.target.value, 10);
+      document.getElementById('rpm-val').textContent = `${rpm} RPM`;
+      document.getElementById('fps-readout').textContent = `${(rpm / 60).toFixed(1)} Hz Refresh`;
+    };
+    document.getElementById('toggle-beams').onchange = (e) => { showBeams = e.target.checked; };
+    document.getElementById('toggle-blade').onchange = (e) => { showBlade = e.target.checked; };
+    document.getElementById('toggle-orbit').onchange = (e) => { autoOrbit = e.target.checked; };
+
+    canvas.addEventListener('pointerdown', e => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointerup', () => { isDragging = false; });
+    canvas.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      rotY += (e.clientX - lastX) * 0.008;
+      rotX = Math.max(-0.3, Math.min(1.25, rotX + (e.clientY - lastY) * 0.008));
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    function project(x, y, z) {
+      const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+      const x1 = x * cosY - z * sinY;
+      const z1 = z * cosY + x * sinY;
+      const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+      const y2 = y * cosX - z1 * sinX;
+      const z2 = z1 * cosX + y * sinX;
+      const fov = 620;
+      const dist = 420;
+      const scale = fov / (dist + z2);
+      return {
+        x: canvas.width / 2 + x1 * scale,
+        y: canvas.height / 2 - y2 * scale,
+        z: z2,
+        s: scale
+      };
+    }
+
+    function isVoxelActive(ix, iy, iz, t) {
+      if (shapeMode === 'cube') {
+        const min = 3, max = 12;
+        const onX = (ix === min || ix === max) && iy >= min && iy <= max && iz >= min && iz <= max;
+        const onY = (iy === min || iy === max) && ix >= min && ix <= max && iz >= min && iz <= max;
+        const onZ = (iz === min || iz === max) && ix >= min && ix <= max && iy >= min && iy <= max;
+        return (onX && onY) || (onY && onZ) || (onX && onZ);
+      }
+      if (shapeMode === 'pyramid') {
+        if (iy < 2 || iy > 13) return false;
+        const r = Math.floor((13 - iy) * 0.55);
+        const cx = 7.5, cz = 7.5;
+        const dx = Math.abs(ix - cx), dz = Math.abs(iz - cz);
+        if (iy === 2) return dx <= r + 0.5 && dz <= r + 0.5 && (dx >= r - 0.5 || dz >= r - 0.5);
+        return Math.abs(dx - r) < 0.8 && Math.abs(dz - r) < 0.8;
+      }
+      if (shapeMode === 'wave') {
+        const dx = ix - 7.5, dz = iz - 7.5;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        const targetY = Math.round(7.5 + 4.5 * Math.sin(d * 0.65 - t * 3.2));
+        return iy === targetY;
+      }
+      if (shapeMode === 'text') {
+        if (iz < 6 || iz > 9) return false;
+        if (iy < 3 || iy > 12) return false;
+        if (ix >= 2 && ix <= 6) {
+          if (iy === 12 || iy === 7 || iy === 3) return true;
+          if (ix === 6) return true;
+        }
+        if (ix >= 9 && ix <= 13) {
+          if (ix === 9) return true;
+          if ((iy === 12 || iy === 3) && ix <= 12) return true;
+          if (ix === 13 && iy > 3 && iy < 12) return true;
+        }
+        return false;
+      }
+      if (shapeMode === 'helix') {
+        const ang1 = (iy / 15) * Math.PI * 2 + t * 2;
+        const ang2 = ang1 + Math.PI;
+        const r = 5.2;
+        const x1 = Math.round(7.5 + Math.cos(ang1) * r);
+        const z1 = Math.round(7.5 + Math.sin(ang1) * r);
+        const x2 = Math.round(7.5 + Math.cos(ang2) * r);
+        const z2 = Math.round(7.5 + Math.sin(ang2) * r);
+        return (ix === x1 && iz === z1) || (ix === x2 && iz === z2);
+      }
+      if (shapeMode === 'sphere') {
+        const dx = ix - 7.5, dy = iy - 7.5, dz = iz - 7.5;
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        return Math.abs(dist - 6.0) < 0.55;
+      }
+      return false;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      time += 0.025;
+      bladeAngle += (rpm / 60) * 0.1;
+      const pal = colorPalettes[laserColor];
+
+      const boxSize = 125;
+      // Outer 30x30x30 cm Acrylic Case
+      const corners = [
+        [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+        [-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]
+      ].map(c => project(c[0]*boxSize, c[1]*boxSize, c[2]*boxSize));
+
+      const edges = [
+        [0,1],[1,2],[2,3],[3,0],
+        [4,5],[5,6],[6,7],[7,4],
+        [0,4],[1,5],[2,6],[3,7]
+      ];
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      ctx.lineWidth = 1.2;
+      edges.forEach(e => {
+        ctx.beginPath();
+        ctx.moveTo(corners[e[0]].x, corners[e[0]].y);
+        ctx.lineTo(corners[e[1]].x, corners[e[1]].y);
+        ctx.stroke();
+      });
+
+      // Top 16x16 Laser Emitter Array
+      for (let ix = 0; ix < 16; ix += 2) {
+        for (let iz = 0; iz < 16; iz += 2) {
+          const wx = ((ix / 15) - 0.5) * boxSize * 1.45;
+          const wz = ((iz / 15) - 0.5) * boxSize * 1.45;
+          const p = project(wx, boxSize, wz);
+          ctx.fillStyle = `rgba(${pal.main}, 0.5)`;
+          ctx.fillRect(p.x - 1.2, p.y - 1.2, 2.4, 2.4);
+        }
+      }
+
+      // Central Motor Shaft
+      const shaftTop = project(0, boxSize * 0.85, 0);
+      const shaftBot = project(0, -boxSize, 0);
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(shaftTop.x, shaftTop.y);
+      ctx.lineTo(shaftBot.x, shaftBot.y);
+      ctx.stroke();
+
+      // Rotating Helical Blade
+      if (showBlade) {
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.26)';
+        ctx.lineWidth = 1.3;
+        for (let s = 0; s < 28; s++) {
+          const frac = s / 27;
+          const ang = bladeAngle + frac * Math.PI * 2;
+          const yHeight = (frac - 0.5) * boxSize * 1.45;
+          const r = boxSize * 0.85;
+          const p1 = project(0, yHeight, 0);
+          const p2 = project(Math.cos(ang) * r, yHeight, Math.sin(ang) * r);
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      }
+
+      // Voxels & Top-Down Laser Beams
+      const povFactor = Math.min(1, rpm / 600);
+      for (let ix = 0; ix < 16; ix++) {
+        for (let iz = 0; iz < 16; iz++) {
+          for (let iy = 0; iy < 16; iy++) {
+            if (!isVoxelActive(ix, iy, iz, time)) continue;
+            const wx = ((ix / 15) - 0.5) * boxSize * 1.4;
+            const wy = ((iy / 15) - 0.5) * boxSize * 1.4;
+            const wz = ((iz / 15) - 0.5) * boxSize * 1.4;
+
+            const vAngle = (Math.atan2(wz, wx) + Math.PI * 2) % (Math.PI * 2);
+            const bAngle = (bladeAngle % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            const diff = Math.abs(vAngle - bAngle);
+            const alpha = povFactor > 0.85 ? 0.92 : Math.max(0.12, 1 - (diff / Math.PI));
+
+            const p = project(wx, wy, wz);
+
+            if (showBeams && Math.random() < 0.2) {
+              const pTop = project(wx, boxSize, wz);
+              ctx.strokeStyle = `rgba(${pal.beam}, ${0.16 * alpha})`;
+              ctx.lineWidth = 0.9;
+              ctx.beginPath();
+              ctx.moveTo(pTop.x, pTop.y);
+              ctx.lineTo(p.x, p.y);
+              ctx.stroke();
+            }
+
+            ctx.fillStyle = `rgba(${pal.main}, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3.1 * p.s, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = `rgba(${pal.core}, ${alpha * 0.95})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1.3 * p.s, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      if (!isDragging && autoOrbit) {
+        rotY += 0.0035;
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
