@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HoloVol 3D — 20 Showcase Models Demo (index3.html)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    canvas {
+      touch-action: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0f172a;
+      border-radius: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 rounded-full bg-rose-500 animate-pulse shadow-[0_0_12px_#f43f5e]"></div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight text-white">HoloVol 3D — 20 Interactive Showcase Models (Version 3)</h1>
+          <p class="text-xs text-slate-400">30×30×30 cm Enclosure | 16×16 Top-Down Laser Matrix (4,096 Voxels) | 20 Animated 3D Presets</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <a href="index.html" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-medium transition">V1 (Original)</a>
+        <a href="index2.html" class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-medium transition">V2 (Raw Hit)</a>
+        <span class="px-3 py-1 rounded-full bg-rose-600 text-white font-semibold">✨ V3 (20 Models Gallery)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto w-full px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1">
+    <!-- Left 3D Viewport -->
+    <div class="lg:col-span-7 flex flex-col gap-3">
+      <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-gradient-to-b from-slate-900 to-black shadow-2xl flex-1 min-h-[480px] flex items-center justify-center">
+        <canvas id="simCanvas" width="840" height="540" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Overlay Badges -->
+        <div class="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
+          <div class="px-3 py-1 rounded-lg bg-slate-900/85 border border-slate-700/70 text-xs text-slate-300">
+            Model: <strong id="current-model-label" class="text-rose-400">1. หน้าคนพูด (Talking Face)</strong>
+          </div>
+          <div class="px-3 py-1 rounded-lg bg-slate-900/85 border border-slate-700/70 text-xs text-slate-300">
+            Mode: <strong id="mode-badge" class="text-sky-400">3D POV Vision</strong>
+          </div>
+          <div class="px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-xs text-amber-300 font-mono">
+            Active Voxels: <strong id="voxel-count">0</strong>
+          </div>
+        </div>
+
+        <div class="absolute bottom-3 left-3 right-3 flex flex-wrap justify-between items-center text-xs text-slate-400 pointer-events-none bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800/80">
+          <span>🖱️ ลากเมาส์หมุนดูรอบทิศทาง 360° (เห็นด้านข้างและมิติความลึกจริง)</span>
+          <span id="fps-readout" class="text-rose-400 font-mono">30.0 Hz Refresh</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Controls & 20 Models Selector -->
+    <div class="lg:col-span-5 flex flex-col gap-4">
+      <!-- 20 Preset 3D Models Grid -->
+      <div class="p-4 rounded-2xl bg-slate-900/95 border border-slate-800 flex flex-col">
+        <div class="flex items-center justify-between mb-2.5">
+          <h2 class="text-sm font-semibold text-white">1. เลือกโมเดล 3D จัดแสดง (20 รูปแบบแอนิเมชัน)</h2>
+          <button id="btn-autoplay" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-medium transition">
+            ▶️ เล่นวนอัตโนมัติ (Auto Showcase)
+          </button>
+        </div>
+
+        <div id="models-grid" class="grid grid-cols-2 sm:grid-cols-2 gap-1.5 max-h-[290px] overflow-y-auto custom-scroll pr-1">
+          <!-- Dynamically populated 20 buttons -->
+        </div>
+      </div>
+
+      <!-- Render Mode & Laser Controls -->
+      <div class="p-4 rounded-2xl bg-slate-900/95 border border-slate-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-white">2. โหมดแสดงผล & ฮาร์ดแวร์เลเซอร์</h2>
+          <button id="btn-slowmo" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-medium transition">
+            ⚡ ทดสอบหมุนช้า (60 RPM Raw Hit)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button id="render-pov" class="px-3 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left">
+            <div>👁️ ภาพติดตา (POV Mode)</div>
+            <div class="text-[11px] font-normal opacity-80">เห็นโมเดล 3D เต็มรูปทรง</div>
+          </button>
+          <button id="render-raw" class="px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left">
+            <div>🔦 ยิงเลเซอร์จริง (Raw Hit)</div>
+            <div class="text-[11px] font-normal opacity-80">คมชัด 100% เฉพาะจุดโดนใบพัด</div>
+          </button>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">ความเร็วมอเตอร์กลาง (BLDC RPM)</span>
+            <span id="rpm-val" class="text-rose-400 font-mono font-semibold">1800 RPM</span>
+          </div>
+          <input id="rpm-slider" type="range" min="15" max="2400" value="1800" class="w-full accent-rose-500">
+        </div>
+
+        <div class="grid grid-cols-4 gap-1.5">
+          <button data-color="red" class="color-btn px-2 py-1.5 text-xs rounded-lg bg-rose-500/20 border border-rose-500 text-rose-300 font-medium">🔴 Red</button>
+          <button data-color="green" class="color-btn px-2 py-1.5 text-xs rounded-lg bg-slate-800 border border-slate-700 text-emerald-300 font-medium">🟢 Green</button>
+          <button data-color="cyan" class="color-btn px-2 py-1.5 text-xs rounded-lg bg-slate-800 border border-slate-700 text-cyan-300 font-medium">🔵 Cyan</button>
+          <button data-color="gold" class="color-btn px-2 py-1.5 text-xs rounded-lg bg-slate-800 border border-slate-700 text-amber-300 font-medium">🟡 Gold</button>
+        </div>
+
+        <div class="pt-1 grid grid-cols-3 gap-2 border-t border-slate-800 text-xs">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="toggle-beams" type="checkbox" checked class="accent-rose-500 w-3.5 h-3.5">
+            <span class="text-slate-300">ลำแสงเลเซอร์</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="toggle-blade" type="checkbox" checked class="accent-rose-500 w-3.5 h-3.5">
+            <span class="text-slate-300">ใบพัดเกลียว</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input id="toggle-orbit" type="checkbox" checked class="accent-rose-500 w-3.5 h-3.5">
+            <span class="text-slate-300">หมุนกล้อง 360°</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const MODELS = [
+      { id: 'talking_face', name: '1. 🗣️ หน้าคนพูด (Talking Face)' },
+      { id: 'standing_human', name: '2. 🧍 คนยืนเต็มตัว (Standing Human)' },
+      { id: 'dancing_human', name: '3. 🕺 คนเต้น (Dancing Human)' },
+      { id: 'cat', name: '4. 🐱 แมวกระดิกหาง (3D Cat)' },
+      { id: 'fish', name: '5. 🐟 ปลาแหวกว่าย (Swimming Fish)' },
+      { id: 'building', name: '6. 🏢 อาคารระฟ้า (Skyscraper)' },
+      { id: 'eiffel', name: '7. 🗼 หอไอเฟล (Eiffel Tower)' },
+      { id: 'company_logo', name: '8. 💎 โลโก้บริษัทหมุน (Brand Logo)' },
+      { id: 'sine_wave', name: '9. 〰️ คลื่น 3D Sine Wave' },
+      { id: 'heart', name: '10. ❤️ หัวใจเต้น (Beating Heart)' },
+      { id: 'dna', name: '11. 🧬 เกลียวคู่ DNA (Double Helix)' },
+      { id: 'rocket', name: '12. 🚀 จรวดอวกาศ (Space Rocket)' },
+      { id: 'car', name: '13. 🚗 รถสปอร์ตโชว์รูม (Concept Car)' },
+      { id: 'crown', name: '14. 👑 มงกุฎเพชร (Royal Crown)' },
+      { id: 'butterfly', name: '15. 🦋 ผีเสื้อขยับปีก (Butterfly)' },
+      { id: 'hourglass', name: '16. ⏳ นาฬิกาทราย (Hourglass)' },
+      { id: 'saturn', name: '17. 🪐 ดาวเสาร์และวงแหวน (Saturn)' },
+      { id: 'tornado', name: '18. 🌪️ พายุทอร์นาโด (Vortex)' },
+      { id: 'music_eq', name: '19. 🎵 คลื่นความถี่เพลง (3D Equalizer)' },
+      { id: 'cube_in_cube', name: '20. 📦 ลูกบาศก์ซ้อนหมุน (Hypercube)' }
+    ];
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    let rotY = 0.55;
+    let rotX = 0.32;
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+    let shapeMode = 'talking_face';
+    let renderMode = 'pov';
+    let laserColor = 'red';
+    let bladeAngle = 0;
+    let rpm = 1800;
+    let showBeams = true;
+    let showBlade = true;
+    let autoOrbit = true;
+    let autoShowcase = false;
+    let autoShowcaseTimer = null;
+    let time = 0;
+
+    const colorPalettes = {
+      red: { main: '255, 45, 75', core: '255, 235, 240', beam: '255, 50, 80' },
+      green: { main: '16, 245, 135', core: '230, 255, 240', beam: '16, 215, 129' },
+      cyan: { main: '56, 200, 255', core: '235, 250, 255', beam: '14, 185, 245' },
+      gold: { main: '251, 191, 36', core: '254, 249, 195', beam: '245, 158, 11' }
+    };
+
+    const modelsGrid = document.getElementById('models-grid');
+    const currentModelLabel = document.getElementById('current-model-label');
+
+    function selectModel(id) {
+      shapeMode = id;
+      const found = MODELS.find(m => m.id === id);
+      if (found) currentModelLabel.textContent = found.name;
+      document.querySelectorAll('.model-btn').forEach(b => {
+        if (b.dataset.id === id) {
+          b.className = 'model-btn px-2.5 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left truncate shadow';
+        } else {
+          b.className = 'model-btn px-2.5 py-2 text-xs rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-medium transition text-left truncate';
+        }
+      });
+    }
+
+    MODELS.forEach(m => {
+      const btn = document.createElement('button');
+      btn.dataset.id = m.id;
+      btn.textContent = m.name;
+      btn.onclick = () => {
+        if (autoShowcase) toggleAutoShowcase();
+        selectModel(m.id);
+      };
+      modelsGrid.appendChild(btn);
+    });
+    selectModel('talking_face');
+
+    const btnAutoplay = document.getElementById('btn-autoplay');
+    function toggleAutoShowcase() {
+      autoShowcase = !autoShowcase;
+      if (autoShowcase) {
+        btnAutoplay.textContent = '⏸️ หยุดเล่นวน (Stop Showcase)';
+        btnAutoplay.className = 'px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500 text-rose-300 text-xs font-semibold transition';
+        autoShowcaseTimer = setInterval(() => {
+          const idx = MODELS.findIndex(m => m.id === shapeMode);
+          const next = MODELS[(idx + 1) % MODELS.length];
+          selectModel(next.id);
+        }, 3500);
+      } else {
+        btnAutoplay.textContent = '▶️ เล่นวนอัตโนมัติ (Auto Showcase)';
+        btnAutoplay.className = 'px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-medium transition';
+        clearInterval(autoShowcaseTimer);
+      }
+    }
+    btnAutoplay.onclick = toggleAutoShowcase;
+
+    const btnRenderPov = document.getElementById('render-pov');
+    const btnRenderRaw = document.getElementById('render-raw');
+    const modeBadge = document.getElementById('mode-badge');
+    const rpmSlider = document.getElementById('rpm-slider');
+    const rpmVal = document.getElementById('rpm-val');
+    const fpsReadout = document.getElementById('fps-readout');
+    const voxelCountEl = document.getElementById('voxel-count');
+
+    function setRenderMode(mode) {
+      renderMode = mode;
+      if (mode === 'pov') {
+        btnRenderPov.className = 'px-3 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left';
+        btnRenderRaw.className = 'px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left';
+        modeBadge.textContent = '3D POV Vision';
+      } else {
+        btnRenderRaw.className = 'px-3 py-2 text-xs rounded-xl bg-rose-600 text-white font-semibold transition text-left';
+        btnRenderPov.className = 'px-3 py-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition text-left';
+        modeBadge.textContent = 'Raw Laser Hit (No Softening)';
+      }
+    }
+    btnRenderPov.onclick = () => setRenderMode('pov');
+    btnRenderRaw.onclick = () => setRenderMode('raw');
+
+    document.getElementById('btn-slowmo').onclick = () => {
+      setRenderMode('raw');
+      rpm = 60;
+      rpmSlider.value = 60;
+      rpmVal.textContent = '60 RPM';
+      fpsReadout.textContent = '1.0 Hz Refresh (Slow-Mo Laser Hit)';
+    };
+
+    document.querySelectorAll('.color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        laserColor = btn.dataset.color;
+        document.querySelectorAll('.color-btn').forEach(b => {
+          b.classList.remove('border-rose-500', 'bg-rose-500/20');
+          b.classList.add('border-slate-700', 'bg-slate-800');
+        });
+        btn.classList.remove('border-slate-700', 'bg-slate-800');
+        btn.classList.add('border-rose-500', 'bg-rose-500/20');
+      });
+    });
+
+    rpmSlider.oninput = (e) => {
+      rpm = parseInt(e.target.value, 10);
+      rpmVal.textContent = `${rpm} RPM`;
+      fpsReadout.textContent = `${(rpm / 60).toFixed(1)} Hz Refresh`;
+    };
+    document.getElementById('toggle-beams').onchange = (e) => { showBeams = e.target.checked; };
+    document.getElementById('toggle-blade').onchange = (e) => { showBlade = e.target.checked; };
+    document.getElementById('toggle-orbit').onchange = (e) => { autoOrbit = e.target.checked; };
+
+    canvas.addEventListener('pointerdown', e => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointerup', () => { isDragging = false; });
+    canvas.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      rotY += (e.clientX - lastX) * 0.008;
+      rotX = Math.max(-0.3, Math.min(1.25, rotX + (e.clientY - lastY) * 0.008));
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    function project(x, y, z) {
+      const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+      const x1 = x * cosY - z * sinY;
+      const z1 = z * cosY + x * sinY;
+      const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+      const y2 = y * cosX - z1 * sinX;
+      const z2 = z1 * cosX + y * sinX;
+      const fov = 640;
+      const dist = 420;
+      const scale = fov / (dist + z2);
+      return {
+        x: canvas.width / 2 + x1 * scale,
+        y: canvas.height / 2 - y2 * scale,
+        z: z2,
+        s: scale
+      };
+    }
+
+    // Distance from point (px,py,pz) to line segment (x1,y1,z1)-(x2,y2,z2)
+    function distToSegment(px, py, pz, x1, y1, z1, x2, y2, z2) {
+      const vx = x2 - x1, vy = y2 - y1, vz = z2 - z1;
+      const wx = px - x1, wy = py - y1, wz = pz - z1;
+      const c1 = wx * vx + wy * vy + wz * vz;
+      if (c1 <= 0) return Math.hypot(px - x1, py - y1, pz - z1);
+      const c2 = vx * vx + vy * vy + vz * vz;
+      if (c2 <= c1) return Math.hypot(px - x2, py - y2, pz - z2);
+      const b = c1 / c2;
+      return Math.hypot(px - (x1 + b * vx), py - (y1 + b * vy), pz - (z1 + b * vz));
+    }
+
+    // Precompute active voxel buffer per frame [16][16][16] for fast lookup
+    const voxelGrid = Array.from({ length: 16 }, () =>
+      Array.from({ length: 16 }, () => new Uint8Array(16))
+    );
+
+    function updateVoxelModel(t) {
+      for (let x = 0; x < 16; x++) {
+        for (let y = 0; y < 16; y++) {
+          voxelGrid[x][y].fill(0);
+        }
+      }
+
+      const setV = (x, y, z) => {
+        const ix = Math.round(x), iy = Math.round(y), iz = Math.round(z);
+        if (ix >= 0 && ix < 16 && iy >= 0 && iy < 16 && iz >= 0 && iz < 16) {
+          voxelGrid[ix][iy][iz] = 1;
+        }
+      };
+
+      const drawLine3D = (x1, y1, z1, x2, y2, z2, steps = 16) => {
+        for (let i = 0; i <= steps; i++) {
+          const u = i / steps;
+          setV(x1 + (x2 - x1) * u, y1 + (y2 - y1) * u, z1 + (z2 - z1) * u);
+        }
+      };
+
+      if (shapeMode === 'talking_face') {
+        // 3D Head shell + eyes + nose + animated talking mouth
+        const mouthOpen = Math.round((Math.sin(t * 6) + 1) * 1.3); // 0..3
+        const blink = Math.sin(t * 2.5) > 0.92;
+        for (let x = 0; x < 16; x++) {
+          for (let y = 0; y < 16; y++) {
+            for (let z = 0; z < 16; z++) {
+              const dx = (x - 7.5) / 5.5;
+              const dy = (y - 8.0) / 6.5;
+              const dz = (z - 7.5) / 5.0;
+              const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+              // Wireframe head contour
+              if (Math.abs(d - 1.0) < 0.11 && (y % 2 === 0 || x === 7 || x === 8)) {
+                setV(x, y, z);
+              }
+            }
+          }
+        }
+        // Eyes on front face (z = 3..4)
+        if (!blink) {
+          setV(5, 10, 3); setV(5, 11, 3); setV(6, 10, 3);
+          setV(10, 10, 3); setV(10, 11, 3); setV(9, 10, 3);
+        } else {
+          setV(5, 10, 3); setV(6, 10, 3);
+          setV(9, 10, 3); setV(10, 10, 3);
+        }
+        // Nose bridge protruding forward
+        setV(7, 9, 2); setV(8, 9, 2); setV(7, 8, 2); setV(8, 8, 2);
+        // Talking Mouth on front
+        for (let mx = 5; mx <= 10; mx++) {
+          setV(mx, 5 + Math.floor(mouthOpen / 2), 3);
+          setV(mx, 5 - Math.ceil(mouthOpen / 2), 3);
+        }
+        setV(5, 5, 3); setV(10, 5, 3);
+      }
+
+      else if (shapeMode === 'standing_human') {
+        // Breathing / waving standing human figure
+        const waveAng = Math.sin(t * 4) * 2.2;
+        // Head (sphere at y=13..15)
+        for (let a = 0; a < 12; a++) {
+          const ang = (a / 12) * Math.PI * 2;
+          setV(7.5 + Math.cos(ang) * 1.6, 13.5, 7.5 + Math.sin(ang) * 1.6);
+          setV(7.5 + Math.cos(ang) * 1.2, 14.5, 7.5 + Math.sin(ang) * 1.2);
+        }
+        // Torso & Shoulders
+        drawLine3D(5, 11, 7.5, 10, 11, 7.5); // Shoulder bar
+        drawLine3D(6, 7, 7.5, 9, 7, 7.5);   // Hip bar
+        drawLine3D(5.5, 11, 7.5, 6, 7, 7.5); // Left torso
+        drawLine3D(9.5, 11, 7.5, 9, 7, 7.5); // Right torso
+        drawLine3D(7.5, 12, 7.5, 7.5, 7, 7.5); // Spine
+        // Legs standing in 3D stance
+        drawLine3D(6, 7, 7.5, 5, 1, 6.5);
+        drawLine3D(9, 7, 7.5, 10, 1, 8.5);
+        // Left arm resting
+        drawLine3D(5, 11, 7.5, 3.5, 7, 7.5);
+        // Right arm waving up and down
+        drawLine3D(10, 11, 7.5, 12.5, 11 + waveAng, 6.5);
+      }
+
+      else if (shapeMode === 'dancing_human') {
+        const beat = t * 5;
+        const hipSwing = Math.sin(beat) * 1.8;
+        const bounce = Math.abs(Math.cos(beat)) * 1.0;
+        const hx = 7.5 - hipSwing * 0.4, hy = 13.5 - bounce;
+        // Head
+        for (let a = 0; a < 10; a++) {
+          const ang = (a / 10) * Math.PI * 2;
+          setV(hx + Math.cos(ang) * 1.5, hy, 7.5 + Math.sin(ang) * 1.5);
+        }
+        const sx = 7.5, sy = 11 - bounce;
+        const px = 7.5 + hipSwing, py = 6.5 - bounce * 0.5;
+        drawLine3D(sx, sy, 7.5, px, py, 7.5); // Spine
+        // Dynamic dancing arms
+        drawLine3D(sx, sy, 7.5, sx - 3.5, sy + Math.sin(beat) * 2.5, 7.5 + Math.cos(beat) * 2);
+        drawLine3D(sx, sy, 7.5, sx + 3.5, sy - Math.sin(beat) * 2.5, 7.5 - Math.cos(beat) * 2);
+        // Dynamic dancing legs
+        drawLine3D(px, py, 7.5, 5, 1, 7.5 - Math.sin(beat) * 2.5);
+        drawLine3D(px, py, 7.5, 10, 1, 7.5 + Math.sin(beat) * 2.5);
+      }
+
+      else if (shapeMode === 'cat') {
+        // 3D Cat with pointy ears, body, 4 legs, and wagging tail
+        // Body cylinder along X (x=5..11, y=5..7, z=6..9)
+        for (let x = 5; x <= 11; x++) {
+          setV(x, 7, 6); setV(x, 7, 9);
+          setV(x, 5, 6); setV(x, 5, 9);
+        }
+        // 4 Legs
+        drawLine3D(5, 5, 6, 5, 1, 6);
+        drawLine3D(5, 5, 9, 5, 1, 9);
+        drawLine3D(10, 5, 6, 10, 1, 6);
+        drawLine3D(10, 5, 9, 10, 1, 9);
+        // Cat Head at front-left (x=3..5, y=7..10, z=6..9)
+        for (let y = 7; y <= 10; y++) {
+          for (let z = 6; z <= 9; z++) {
+            if (y === 7 || y === 10 || z === 6 || z === 9) setV(3, y, z);
+          }
+        }
+        // Pointy Ears
+        setV(3, 11, 6); setV(3, 12, 6);
+        setV(3, 11, 9); setV(3, 12, 9);
+        // Whiskers / Nose
+        setV(2, 8, 7); setV(2, 8, 8);
+        // Wagging Tail at back (x=11..14)
+        const wag = Math.sin(t * 5) * 2.5;
+        drawLine3D(11, 7, 7.5, 14, 11, 7.5 + wag);
+      }
+
+      else if (shapeMode === 'fish') {
+        // Swimming 3D fish with sinusoidal body undulation
+        for (let x = 2; x <= 13; x++) {
+          const u = (x - 2) / 11; // 0=nose, 1=tail
+          const sway = Math.sin(t * 6 - u * 4.5) * (0.5 + u * 2.2);
+          const cz = 7.5 + sway;
+          let halfH = 0;
+          if (u < 0.7) {
+            halfH = Math.sin((u / 0.7) * Math.PI) * 3.8;
+          } else {
+            // Tail fin flares out
+            halfH = (u - 0.7) * 11;
+          }
+          const topY = Math.round(7.5 + halfH);
+          const botY = Math.round(7.5 - halfH);
+          setV(x, topY, cz);
+          setV(x, botY, cz);
+          if (u > 0.15 && u < 0.65) {
+            setV(x, 7.5, cz - 1.8);
+            setV(x, 7.5, cz + 1.8);
+          }
+          if (u >= 0.75) {
+            drawLine3D(x, botY, cz, x, topY, cz);
+          }
+        }
+        // Eye
+        setV(4, 8, 7.5 + Math.sin(t * 6) * 0.5 - 1.5);
+      }
+
+      else if (shapeMode === 'building') {
+        // Skyscraper with animated elevator & spire beacon
+        for (let y = 1; y <= 12; y++) {
+          for (let x = 4; x <= 11; x++) {
+            for (let z = 4; z <= 11; z++) {
+              const isCorner = (x === 4 || x === 11) && (z === 4 || z === 11);
+              const isFloor = (y % 3 === 1) && (x === 4 || x === 11 || z === 4 || z === 11);
+              if (isCorner || isFloor) setV(x, y, z);
+            }
+          }
+        }
+        // Upper setback tier
+        for (let y = 12; y <= 14; y++) {
+          setV(6, y, 6); setV(9, y, 6); setV(6, y, 9); setV(9, y, 9);
+        }
+        // Spire
+        setV(7, 15, 7); setV(8, 15, 8);
+        // Moving elevator core inside building
+        const elevY = Math.round(2 + ((Math.sin(t * 2.5) + 1) / 2) * 10);
+        for (let ex = 7; ex <= 8; ex++) {
+          for (let ez = 7; ez <= 8; ez++) setV(ex, elevY, ez);
+        }
+      }
+
+      else if (shapeMode === 'eiffel') {
+        // Eiffel Tower: curved 4 legs merging to platform and tall spire
+        for (let y = 1; y <= 15; y++) {
+          const progress = (y - 1) / 14; // 0..1
+          const spread = Math.max(0.5, Math.pow(1 - progress, 1.65) * 5.5);
+          setV(7.5 - spread, y, 7.5 - spread);
+          setV(7.5 + spread, y, 7.5 - spread);
+          setV(7.5 - spread, y, 7.5 + spread);
+          setV(7.5 + spread, y, 7.5 + spread);
+          // Observation decks at y=5 and y=9
+          if (y === 5 || y === 9) {
+            const s = Math.round(spread);
+            for (let d = -s; d <= s; d++) {
+              setV(7.5 + d, y, 7.5 - spread);
+              setV(7.5 + d, y, 7.5 + spread);
+              setV(7.5 - spread, y, 7.5 + d);
+              setV(7.5 + spread, y, 7.5 + d);
+            }
+          }
+        }
+      }
+
+      else if (shapeMode === 'company_logo') {
+        // Rotating 3D Octahedron Gem + Orbiting Ring
+        const ang = t * 2;
+        const r = 4.8;
+        const top = [7.5, 13.5, 7.5], bot = [7.5, 1.5, 7.5];
+        const pts = [];
+        for (let i = 0; i < 4; i++) {
+          const a = ang + (i * Math.PI) / 2;
+          pts.push([7.5 + Math.cos(a) * r, 7.5, 7.5 + Math.sin(a) * r]);
+        }
+        for (let i = 0; i < 4; i++) {
+          const p1 = pts[i], p2 = pts[(i + 1) % 4];
+          drawLine3D(top[0], top[1], top[2], p1[0], p1[1], p1[2]);
+          drawLine3D(bot[0], bot[1], bot[2], p1[0], p1[1], p1[2]);
+          drawLine3D(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+        }
+      }
+
+      else if (shapeMode === 'sine_wave') {
+        // 3D Ripple Sine Surface
+        for (let x = 0; x < 16; x++) {
+          for (let z = 0; z < 16; z++) {
+            const dx = x - 7.5, dz = z - 7.5;
+            const d = Math.sqrt(dx * dx + dz * dz);
+            const y = Math.round(7.5 + 4.5 * Math.sin(d * 0.65 - t * 3.5));
+            setV(x, y, z);
+          }
+        }
+      }
+
+      else if (shapeMode === 'heart') {
+        // 3D Beating Heart
+        const pulse = 1 + 0.14 * Math.sin(t * 7);
+        for (let x = 1; x < 15; x++) {
+          for (let y = 1; y < 15; y++) {
+            for (let z = 4; z < 12; z++) {
+              const nx = ((x - 7.5) / (4.8 * pulse));
+              const ny = ((y - 6.5) / (4.8 * pulse));
+              const nz = ((z - 7.5) / (2.5 * pulse));
+              const a = nx * nx + 2.2 * nz * nz + ny * ny - 1;
+              const val = a * a * a - (nx * nx + 0.1 * nz * nz) * (ny * ny * ny);
+              if (val < 0 && val > -0.28) setV(x, y, z);
+            }
+          }
+        }
+      }
+
+      else if (shapeMode === 'dna') {
+        // Double Helix with base-pair rungs
+        for (let y = 1; y < 15; y++) {
+          const ang = (y / 14) * Math.PI * 2.2 + t * 2.5;
+          const x1 = 7.5 + Math.cos(ang) * 4.8;
+          const z1 = 7.5 + Math.sin(ang) * 4.8;
+          const x2 = 7.5 + Math.cos(ang + Math.PI) * 4.8;
+          const z2 = 7.5 + Math.sin(ang + Math.PI) * 4.8;
+          setV(x1, y, z1);
+          setV(x2, y, z2);
+          if (y % 2 === 0) {
+            drawLine3D(x1, y, z1, x2, y, z2, 8);
+          }
+        }
+      }
+
+      else if (shapeMode === 'rocket') {
+        // Rocket body + nose cone + 4 fins + animated exhaust flame
+        for (let y = 5; y <= 14; y++) {
+          const r = y > 10 ? (14.5 - y) * 0.75 : 2.6;
+          for (let a = 0; a < 8; a++) {
+            const ang = (a / 8) * Math.PI * 2 + t;
+            setV(7.5 + Math.cos(ang) * r, y, 7.5 + Math.sin(ang) * r);
+          }
+        }
+        // 4 Fins
+        drawLine3D(5, 6, 7.5, 2, 3, 7.5);
+        drawLine3D(10, 6, 7.5, 13, 3, 7.5);
+        drawLine3D(7.5, 6, 5, 7.5, 3, 2);
+        drawLine3D(7.5, 6, 10, 7.5, 3, 13);
+        // Animated exhaust plume (y=1..4)
+        for (let f = 0; f < 10; f++) {
+          const fy = 1 + ((f + Math.floor(t * 15)) % 4);
+          const ang = f * 1.7 + t * 8;
+          setV(7.5 + Math.cos(ang) * 1.4, fy, 7.5 + Math.sin(ang) * 1.4);
+        }
+      }
+
+      else if (shapeMode === 'car') {
+        // 3D Concept Car chassis + cabin + 4 wheels
+        // Lower body box (x=2..13, y=4..6, z=4..11)
+        drawLine3D(2, 4, 4, 13, 4, 4); drawLine3D(2, 4, 11, 13, 4, 11);
+        drawLine3D(2, 6, 4, 13, 6, 4); drawLine3D(2, 6, 11, 13, 6, 11);
+        drawLine3D(2, 4, 4, 2, 6, 4);  drawLine3D(13, 4, 4, 13, 6, 4);
+        drawLine3D(2, 4, 11, 2, 6, 11); drawLine3D(13, 4, 11, 13, 6, 11);
+        drawLine3D(2, 6, 4, 2, 6, 11); drawLine3D(13, 6, 4, 13, 6, 11);
+        // Cabin roof (x=5..10, y=9, z=5..10)
+        drawLine3D(5, 9, 5, 10, 9, 5); drawLine3D(5, 9, 10, 10, 9, 10);
+        drawLine3D(5, 9, 5, 5, 9, 10); drawLine3D(10, 9, 5, 10, 9, 10);
+        // Windshield & rear pillars
+        drawLine3D(3, 6, 4, 5, 9, 5); drawLine3D(3, 6, 11, 5, 9, 10);
+        drawLine3D(12, 6, 4, 10, 9, 5); drawLine3D(12, 6, 11, 10, 9, 10);
+        // 4 Wheels
+        [[4, 3], [11, 3], [4, 12], [11, 12]].forEach(([wx, wz]) => {
+          setV(wx, 3, wz); setV(wx + 1, 3, wz); setV(wx, 4, wz); setV(wx + 1, 4, wz);
+        });
+      }
+
+      else if (shapeMode === 'crown') {
+        // Royal Crown with 5 spikes
+        const r = 5.0;
+        for (let i = 0; i < 24; i++) {
+          const ang = (i / 24) * Math.PI * 2 + t;
+          const x = 7.5 + Math.cos(ang) * r;
+          const z = 7.5 + Math.sin(ang) * r;
+          setV(x, 4, z);
+          setV(x, 6, z);
+          const spike = Math.round(6 + Math.max(0, Math.sin(ang * 5 - t * 5)) * 5);
+          for (let y = 6; y <= spike; y++) setV(x, y, z);
+        }
+      }
+
+      else if (shapeMode === 'butterfly') {
+        // Flapping 3D Butterfly
+        const flap = Math.sin(t * 7) * 0.85; // wing angle
+        // Body
+        drawLine3D(7.5, 5, 4, 7.5, 9, 11);
+        // Wings
+        for (let u = 1; u <= 6; u++) {
+          for (let v = -4; v <= 4; v++) {
+            const wingOutline = (u === 6) || (Math.abs(v) === 4) || (u + Math.abs(v) === 8);
+            if (!wingOutline) continue;
+            const wy = 7.5 + Math.sin(flap) * u;
+            const wxSpan = Math.cos(flap) * u;
+            setV(7.5 - wxSpan, wy, 7.5 + v);
+            setV(7.5 + wxSpan, wy, 7.5 + v);
+          }
+        }
+      }
+
+      else if (shapeMode === 'hourglass') {
+        // Hourglass with falling sand grains
+        for (let y = 2; y <= 13; y++) {
+          const r = Math.abs(y - 7.5) * 0.85 + 0.6;
+          for (let a = 0; a < 12; a++) {
+            const ang = (a / 12) * Math.PI * 2;
+            setV(7.5 + Math.cos(ang) * r, y, 7.5 + Math.sin(ang) * r);
+          }
+        }
+        // Falling sand stream in center
+        for (let y = 2; y <= 7; y++) {
+          if ((y + Math.floor(t * 12)) % 2 === 0) setV(7.5, y, 7.5);
+        }
+      }
+
+      else if (shapeMode === 'saturn') {
+        // Planet core + tilted rings
+        for (let x = 4; x <= 11; x++) {
+          for (let y = 4; y <= 11; y++) {
+            for (let z = 4; z <= 11; z++) {
+              const d = Math.hypot(x - 7.5, y - 7.5, z - 7.5);
+              if (Math.abs(d - 3.0) < 0.45) setV(x, y, z);
+            }
+          }
+        }
+        // Tilted Ring
+        for (let a = 0; a < 36; a++) {
+          const ang = (a / 36) * Math.PI * 2 + t;
+          for (let r = 5.5; r <= 7.0; r += 1.2) {
+            const rx = Math.cos(ang) * r;
+            const rz = Math.sin(ang) * r;
+            const ry = rx * 0.42;
+            setV(7.5 + rx, 7.5 + ry, 7.5 + rz);
+          }
+        }
+      }
+
+      else if (shapeMode === 'tornado') {
+        // Spinning Funnel Vortex
+        for (let y = 1; y < 15; y++) {
+          const r = 0.8 + (y / 14) * 5.8;
+          for (let k = 0; k < 4; k++) {
+            const ang = (y * 0.55) - t * 6 + (k * Math.PI / 2);
+            setV(7.5 + Math.cos(ang) * r, y, 7.5 + Math.sin(ang) * r);
+          }
+        }
+      }
+
+      else if (shapeMode === 'music_eq') {
+        // 4x4 Matrix of 3D Audio Spectrum Bars
+        for (let bx = 0; bx < 4; bx++) {
+          for (let bz = 0; bz < 4; bz++) {
+            const gx = 2 + bx * 3.5;
+            const gz = 2 + bz * 3.5;
+            const h = Math.round(2 + (Math.sin(t * 5 + bx * 1.3 + bz * 1.7) + 1) * 5.5);
+            for (let y = 1; y <= h; y++) {
+              setV(gx, y, gz);
+              setV(gx + 1, y, gz);
+              setV(gx, y, gz + 1);
+              setV(gx + 1, y, gz + 1);
+            }
+          }
+        }
+      }
+
+      else if (shapeMode === 'cube_in_cube') {
+        // Outer Wire Cube + Rotating Inner Cube
+        const min = 2, max = 13;
+        for (let i = min; i <= max; i++) {
+          setV(i, min, min); setV(i, max, min); setV(i, min, max); setV(i, max, max);
+          setV(min, i, min); setV(max, i, min); setV(min, i, max); setV(max, i, max);
+          setV(min, min, i); setV(max, min, i); setV(min, max, i); setV(max, max, i);
+        }
+        // Inner cube rotating
+        const r = 3.2;
+        const ang = -t * 2.5;
+        const pts = [];
+        for (let i = 0; i < 4; i++) {
+          const a = ang + (i * Math.PI) / 2;
+          pts.push([7.5 + Math.cos(a) * r, 7.5 + Math.sin(a) * r]);
+        }
+        for (let i = 0; i < 4; i++) {
+          const p1 = pts[i], p2 = pts[(i + 1) % 4];
+          drawLine3D(p1[0], 5, p1[1], p2[0], 5, p2[1], 8);
+          drawLine3D(p1[0], 10, p1[1], p2[0], 10, p2[1], 8);
+          drawLine3D(p1[0], 5, p1[1], p1[0], 10, p1[1], 8);
+        }
+      }
+    }
+
+    function getBladeHeightAtColumn(ix, iz, currentBladeAngle) {
+      const dx = ix - 7.5;
+      const dz = iz - 7.5;
+      if (dx * dx + dz * dz > 8.2 * 8.2) return -1;
+      const colAngle = (Math.atan2(dz, dx) + Math.PI * 2) % (Math.PI * 2);
+      const normBlade = (currentBladeAngle % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const relAngle = (colAngle - normBlade + Math.PI * 2) % (Math.PI * 2);
+      return Math.round((relAngle / (Math.PI * 2)) * 15);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      time += 0.022;
+      bladeAngle += (rpm / 60) * 0.065;
+      updateVoxelModel(time);
+
+      const pal = colorPalettes[laserColor];
+      const boxSize = 130;
+
+      // Outer 30x30x30 cm Case
+      const corners = [
+        [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+        [-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]
+      ].map(c => project(c[0]*boxSize, c[1]*boxSize, c[2]*boxSize));
+
+      const edges = [
+        [0,1],[1,2],[2,3],[3,0],
+        [4,5],[5,6],[6,7],[7,4],
+        [0,4],[1,5],[2,6],[3,7]
+      ];
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+      ctx.lineWidth = 1.2;
+      edges.forEach(e => {
+        ctx.beginPath();
+        ctx.moveTo(corners[e[0]].x, corners[e[0]].y);
+        ctx.lineTo(corners[e[1]].x, corners[e[1]].y);
+        ctx.stroke();
+      });
+
+      // Top 16x16 Laser Emitter Plate
+      for (let ix = 0; ix < 16; ix++) {
+        for (let iz = 0; iz < 16; iz++) {
+          const wx = ((ix / 15) - 0.5) * boxSize * 1.4;
+          const wz = ((iz / 15) - 0.5) * boxSize * 1.4;
+          const p = project(wx, boxSize, wz);
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.3)';
+          ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+        }
+      }
+
+      // Central Motor Shaft
+      const shaftTop = project(0, boxSize * 0.85, 0);
+      const shaftBot = project(0, -boxSize, 0);
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(shaftTop.x, shaftTop.y);
+      ctx.lineTo(shaftBot.x, shaftBot.y);
+      ctx.stroke();
+
+      // Helical Blade
+      if (showBlade) {
+        const steps = 44;
+        let prevOuter = null;
+        for (let s = 0; s <= steps; s++) {
+          const frac = s / steps;
+          const ang = bladeAngle + frac * Math.PI * 2;
+          const wy = (frac - 0.5) * boxSize * 1.4;
+          const r = boxSize * 0.82;
+          const pInner = project(0, wy, 0);
+          const pOuter = project(Math.cos(ang) * r, wy, Math.sin(ang) * r);
+
+          ctx.strokeStyle = renderMode === 'raw'
+            ? 'rgba(148, 163, 184, 0.36)'
+            : 'rgba(125, 211, 252, 0.18)';
+          ctx.lineWidth = 1.1;
+          ctx.beginPath();
+          ctx.moveTo(pInner.x, pInner.y);
+          ctx.lineTo(pOuter.x, pOuter.y);
+          ctx.stroke();
+
+          if (prevOuter) {
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(prevOuter.x, prevOuter.y);
+            ctx.lineTo(pOuter.x, pOuter.y);
+            ctx.stroke();
+          }
+          prevOuter = pOuter;
+        }
+      }
+
+      let activeCount = 0;
+
+      if (renderMode === 'raw') {
+        for (let ix = 0; ix < 16; ix++) {
+          for (let iz = 0; iz < 16; iz++) {
+            const bladeY = getBladeHeightAtColumn(ix, iz, bladeAngle);
+            if (bladeY < 0) continue;
+            if (voxelGrid[ix][bladeY][iz]) {
+              activeCount++;
+              const wx = ((ix / 15) - 0.5) * boxSize * 1.4;
+              const wy = ((bladeY / 15) - 0.5) * boxSize * 1.4;
+              const wz = ((iz / 15) - 0.5) * boxSize * 1.4;
+
+              const pHit = project(wx, wy, wz);
+              const pTop = project(wx, boxSize, wz);
+
+              ctx.fillStyle = `rgb(${pal.core})`;
+              ctx.beginPath();
+              ctx.arc(pTop.x, pTop.y, 2.6 * pTop.s, 0, Math.PI * 2);
+              ctx.fill();
+
+              if (showBeams) {
+                ctx.strokeStyle = `rgba(${pal.beam}, 0.92)`;
+                ctx.lineWidth = 1.7;
+                ctx.beginPath();
+                ctx.moveTo(pTop.x, pTop.y);
+                ctx.lineTo(pHit.x, pHit.y);
+                ctx.stroke();
+              }
+
+              ctx.fillStyle = `rgb(${pal.main})`;
+              ctx.beginPath();
+              ctx.arc(pHit.x, pHit.y, 4.2 * pHit.s, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#ffffff';
+              ctx.beginPath();
+              ctx.arc(pHit.x, pHit.y, 2.0 * pHit.s, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+      } else {
+        for (let ix = 0; ix < 16; ix++) {
+          for (let iz = 0; iz < 16; iz++) {
+            const bladeY = getBladeHeightAtColumn(ix, iz, bladeAngle);
+            for (let iy = 0; iy < 16; iy++) {
+              if (!voxelGrid[ix][iy][iz]) continue;
+              if (rpm < 900) {
+                const dy = Math.abs(iy - bladeY);
+                if (dy > Math.max(0.6, (rpm / 900) * 15)) continue;
+              }
+              activeCount++;
+              const wx = ((ix / 15) - 0.5) * boxSize * 1.4;
+              const wy = ((iy / 15) - 0.5) * boxSize * 1.4;
+              const wz = ((iz / 15) - 0.5) * boxSize * 1.4;
+              const p = project(wx, wy, wz);
+              const isExactHit = (iy === bladeY);
+
+              if (showBeams && (isExactHit || Math.random() < 0.08)) {
+                const pTop = project(wx, boxSize, wz);
+                ctx.strokeStyle = `rgba(${pal.beam}, ${isExactHit ? 0.55 : 0.14})`;
+                ctx.lineWidth = isExactHit ? 1.2 : 0.8;
+                ctx.beginPath();
+                ctx.moveTo(pTop.x, pTop.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+              }
+
+              ctx.fillStyle = `rgb(${pal.main})`;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, (isExactHit ? 3.8 : 3.0) * p.s, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = `rgb(${pal.core})`;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, (isExactHit ? 1.8 : 1.3) * p.s, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+      }
+
+      voxelCountEl.textContent = activeCount;
+
+      if (!isDragging && autoOrbit) {
+        rotY += 0.0032;
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
